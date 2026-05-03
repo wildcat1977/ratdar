@@ -21,20 +21,23 @@
 
 ## `reports`
 
-| 欄位         | 型別                                 | 說明                                  |
-| ------------ | ------------------------------------ | ------------------------------------- |
-| id           | bigint PK                            |                                       |
-| user_id      | FK → users                           | 通報者，cascadeOnDelete                |
-| latitude     | decimal(10,7)                        | 緯度                                  |
-| longitude    | decimal(10,7)                        | 經度                                  |
-| image_path   | string                               | 儲存於 `storage/app/public/reports/`  |
-| description  | text null                            | 備註                                  |
-| status       | enum(pending, approved, rejected)    | 預設 `pending`，後台審核              |
-| timestamps   |                                      |                                       |
+| 欄位         | 型別                                                                  | 說明                                  |
+| ------------ | --------------------------------------------------------------------- | ------------------------------------- |
+| id           | bigint PK                                                             |                                       |
+| user_id      | FK → users                                                            | 通報者，cascadeOnDelete                |
+| type         | string(16)                                                            | `rat`（鼠蹤）/ `poison`（毒餌），預設 `rat` |
+| latitude     | decimal(10,7)                                                         | 緯度                                  |
+| longitude    | decimal(10,7)                                                         | 經度                                  |
+| address      | string null                                                           | 反查地址（縣市+區）                    |
+| image_path   | string null                                                           | 儲存於 `storage/app/public/reports/`  |
+| description  | text null                                                             | 備註                                  |
+| status       | enum(pending, approved, rejected, reported_1999, resolved)            | 預設 `pending`，後台審核              |
+| timestamps   |                                                                       |                                       |
 
 索引：
 - `(latitude, longitude)` — 方便日後 bbox 查詢
 - `status` — 篩選審核狀態
+- `type` — 篩選通報類型（鼠蹤 / 毒餌）
 
 ## ER 圖
 

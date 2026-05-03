@@ -3,6 +3,7 @@
 use App\Models\Report;
 use App\Services\ImageModerationService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Intervention\Image\Encoders\JpegEncoder;
@@ -18,6 +19,8 @@ new class extends Component
 
     public bool $open = false;
     public bool $exifLocation = false;
+
+    public string $type = 'rat';  // rat | poison
 
     public $photo = null;
 
@@ -35,6 +38,7 @@ new class extends Component
     public function rules(): array
     {
         return [
+            'type'        => ['required', 'in:rat,poison'],
             'photo'       => ['nullable', 'image', 'max:20480'],
             'latitude'    => ['required', 'numeric', 'between:-90,90'],
             'longitude'   => ['required', 'numeric', 'between:-180,180'],
@@ -65,6 +69,7 @@ new class extends Component
             return;
         }
         $this->reset(['photo', 'description', 'submitted', 'rejected']);
+        $this->type = 'rat';
         $this->open = true;
     }
 
@@ -95,6 +100,11 @@ new class extends Component
 
     public function submit(): void
     {
+        if (Auth::user()?->is_banned) {
+            $this->addError('description', '您的帳號已被停用，無法提交通報。如有疑問請聯絡管理員。');
+            return;
+        }
+
         $this->validate();
 
         $filename = null;
@@ -111,7 +121,7 @@ new class extends Component
             Storage::disk('public')->put($filename, $jpeg);
 
             $moderation = app(ImageModerationService::class)
-                ->moderate($this->photo->getRealPath());
+                ->moderate($this->photo->getRealPath(), $this->type);
 
             $status = match(true) {
                 ! $moderation['is_valid']    => Report::STATUS_REJECTED,
@@ -122,6 +132,7 @@ new class extends Component
 
         Report::create([
             'user_id'     => Auth::id(),
+            'type'        => $this->type,
             'latitude'    => $this->latitude,
             'longitude'   => $this->longitude,
             'address'     => $this->address ?: null,
@@ -136,6 +147,8 @@ new class extends Component
         }
 
         $this->submitted = true;
+        Cache::forget('report_list.all_coords');
+        Cache::forget('report_list.district_stats');
         $this->dispatch('report-submitted');
     }
 }; ?>
@@ -174,11 +187,44 @@ new class extends Component
                     </div>
                 @else
                     <div class="flex items-start justify-between">
-                        <h2 class="text-xl font-bold">回報鼠蹤</h2>
+                        <h2 class="text-xl font-bold">
+                            @if ($type === 'poison')
+                                <span class="text-purple-300">☠️ 回報毒餌</span>
+                            @else
+                                <span>🐀 回報鼠蹤</span>
+                            @endif
+                        </h2>
                         <button wire:click="close" class="text-slate-500 hover:text-slate-200">✕</button>
                     </div>
 
                     <form wire:submit="submit" class="mt-4 space-y-4">
+                        {{-- 通報類型切換 --}}
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400">類型</label>
+                            <div class="mt-2 grid grid-cols-2 gap-2">
+                                <button type="button"
+                                        wire:click="$set('type', 'rat')"
+                                        class="flex items-center justify-center gap-2 rounded-xl border px-3 py-3 text-sm font-semibold transition
+                                               {{ $type === 'rat'
+                                                   ? 'border-red-500/60 bg-red-500/15 text-red-200 shadow-[0_0_18px_rgba(239,68,68,0.35)]'
+                                                   : 'border-white/10 bg-black/30 text-slate-400 hover:border-white/20' }}">
+                                    🐀 發現鼠蹤
+                                </button>
+                                <button type="button"
+                                        wire:click="$set('type', 'poison')"
+                                        class="flex items-center justify-center gap-2 rounded-xl border px-3 py-3 text-sm font-semibold transition
+                                               {{ $type === 'poison'
+                                                   ? 'border-purple-500/60 bg-purple-500/15 text-purple-200 shadow-[0_0_18px_rgba(168,85,247,0.35)]'
+                                                   : 'border-white/10 bg-black/30 text-slate-400 hover:border-white/20' }}">
+                                    ☠️ 發現毒餌
+                                </button>
+                            </div>
+                            @if ($type === 'poison')
+                                <p class="mt-2 rounded-md bg-purple-500/10 px-3 py-2 text-[11px] leading-relaxed text-purple-200/80">
+                                    回報被隨意放置於盆栽、花圃、騎樓的老鼠藥/毒餌，提醒寵物飼主避開該區域與野生動物保育者關注。
+                                </p>
+                            @endif
+                        </div>
                         <div x-data="{ preview: null, setPreview(files) { const f = files?.[0]; if (!f) return; const old = this.preview; this.preview = URL.createObjectURL(f); if (old) URL.revokeObjectURL(old); } }">
                             <label class="block text-xs font-medium text-slate-400">📸 現場照片</label>
                             {{-- 縮圖預覽 --}}
@@ -218,14 +264,17 @@ new class extends Component
                                 <span class="text-slate-600">（未上傳照片時必填，至少 20 字）</span>
                             </label>
                             <textarea wire:model="description" rows="3"
-                                      placeholder="例如：垃圾堆、騎樓、巷口…"
+                                      placeholder="{{ $type === 'poison' ? '例如：放在公園盆栽下、花圃邊、騎樓地上…' : '例如：垃圾堆、騎樓、巷口…' }}"
                                       class="mt-2 w-full rounded-lg border border-white/10 bg-black/30 p-2 text-sm placeholder:text-slate-600"></textarea>
                             @error('description') <p class="mt-1 text-xs text-red-400">{{ $message }}</p> @enderror
                         </div>
 
                         <button type="submit"
                                 wire:loading.attr="disabled"
-                                class="w-full rounded-xl bg-red-600 px-4 py-3 font-bold text-white shadow-[0_0_20px_rgba(239,68,68,0.5)] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                                class="w-full rounded-xl px-4 py-3 font-bold text-white active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed
+                                       {{ $type === 'poison'
+                                           ? 'bg-purple-600 shadow-[0_0_20px_rgba(168,85,247,0.5)]'
+                                           : 'bg-red-600 shadow-[0_0_20px_rgba(239,68,68,0.5)]' }}">
                             <span wire:loading.remove>送出通報</span>
                             <span wire:loading>⏳ 系統防衛網掃描中…</span>
                         </button>

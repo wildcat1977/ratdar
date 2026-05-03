@@ -25,6 +25,11 @@ Route::get('/reports/export', function () {
         Report::STATUS_RESOLVED      => '已處理',
     ];
 
+    $typeLabels = [
+        Report::TYPE_RAT    => '鼠蹤',
+        Report::TYPE_POISON => '毒餌',
+    ];
+
     $filename = '鼠蹤通報清單_' . now()->format('Ymd_His') . '.csv';
 
     $headers = [
@@ -32,14 +37,15 @@ Route::get('/reports/export', function () {
         'Content-Disposition' => 'attachment; filename="' . $filename . '"',
     ];
 
-    $callback = function () use ($reports, $statusLabels) {
+    $callback = function () use ($reports, $statusLabels, $typeLabels) {
         $handle = fopen('php://output', 'w');
         fwrite($handle, "\xEF\xBB\xBF"); // UTF-8 BOM for Excel
-        fputcsv($handle, ['通報時間', '地點', '狀態', '說明', '照片網址', '緯度', '經度']);
+        fputcsv($handle, ['通報時間', '類型', '地點', '狀態', '說明', '照片網址', '緯度', '經度']);
 
         foreach ($reports as $report) {
             fputcsv($handle, [
                 $report->created_at->format('Y-m-d H:i'),
+                $typeLabels[$report->type] ?? $report->type,
                 $report->address ?: '',
                 $statusLabels[$report->status] ?? $report->status,
                 $report->description ?? '',

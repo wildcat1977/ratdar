@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Users\Schemas;
 
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
 
@@ -35,6 +36,17 @@ class UserForm
                 Toggle::make('is_admin')
                     ->label('管理員權限')
                     ->helperText('開啟後可登入後台並審核回報'),
+
+                Toggle::make('is_banned')
+                    ->label('封禁帳號')
+                    ->helperText('封禁後該帳號將無法提交任何通報')
+                    ->reactive(),
+
+                Textarea::make('ban_reason')
+                    ->label('封禁原因')
+                    ->rows(2)
+                    ->visible(fn ($get) => (bool) $get('is_banned'))
+                    ->placeholder('請填寫封禁原因，方便日後查閱'),
             ]);
     }
 }
