@@ -12,6 +12,7 @@ use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Storage;
 
 class ReportsTable
 {
@@ -32,7 +33,11 @@ class ReportsTable
                     ->label('照片')
                     ->disk('public')
                     ->height(60)
-                    ->width(80),
+                    ->width(80)
+                    ->url(fn (Report $record) => $record->image_path
+                        ? Storage::disk('public')->url($record->image_path)
+                        : null)
+                    ->openUrlInNewTab(),
 
                 TextColumn::make('description')
                     ->label('描述')
