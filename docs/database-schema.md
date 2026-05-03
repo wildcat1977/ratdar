@@ -39,11 +39,32 @@
 - `status` — 篩選審核狀態
 - `type` — 篩選通報類型（鼠蹤 / 毒餌）
 
+## `contacts`
+
+使用者透過「聯絡管理員」表單送出的訊息。
+
+| 欄位         | 型別              | 說明                                          |
+| ------------ | ----------------- | --------------------------------------------- |
+| id           | bigint PK         |                                               |
+| user_id      | FK → users null   | 若已登入則記錄對應帳號                        |
+| name         | string(100)       | 發件人姓名                                    |
+| email        | string(200)       | 發件人 Email                                  |
+| subject      | string(200)       | 主旨                                          |
+| message      | text              | 訊息內容                                      |
+| status       | string(20)        | `unread` / `read` / `replied`，預設 `unread`  |
+| reply        | text null         | 管理員回覆（備忘，目前不自動寄信）            |
+| replied_at   | timestamp null    | 管理員標記已回覆時間                          |
+| timestamps   |                   |                                               |
+
+索引：`status`
+
 ## ER 圖
 
 ```
 users 1 ─────── * reports
        (user_id)
+
+users 1 ─────── * contacts   (user_id, nullable)
 ```
 
 ## 未來擴充建議

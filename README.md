@@ -61,10 +61,12 @@ app/
 │   └── BackfillReportAddresses.php  # 對既有通報批次補跑 reverse geocode
 ├── Filament/Resources/
 │   ├── Reports/                     # 通報後台（含地圖選點 + 儲存後自動更新地址）
+│   ├── Contacts/                    # 聯絡訊息後台（未讀標記 + 回覆備忘）
 │   └── Users/
 ├── Http/Controllers/Auth/
 │   └── SocialiteController.php      # Google / LINE OAuth + LINE LIFF callback
 ├── Models/
+│   ├── Contact.php                  # 聯絡表單 model（status 常數）
 │   ├── Report.php                   # visible scope / 狀態常數
 │   └── User.php
 ├── Services/
@@ -72,8 +74,8 @@ app/
 └── Providers/AppServiceProvider     # 註冊 LINE Socialite Provider
 
 resources/
-├── css/app.css                      # Tailwind 4 + Leaflet geocoder + 雷達動畫
-├── js/app.js                        # Leaflet / heatmap / geocoder / LIFF 偵測
+├── css/app.css                      # Tailwind 4 + Leaflet 主題切換（亮/暗）+ geocoder + 雷達動畫
+├── js/app.js                        # Leaflet / heatmap / 地圖主題切換 / geocoder 搜尋 / LIFF 偵測
 └── views/
     ├── layouts/app.blade.php        # 全域 layout（含 LIFF SDK 條件載入）
     ├── pages/
@@ -85,6 +87,7 @@ resources/
     ├── livewire/
     │   ├── radar-map.blade.php      # 地圖 Livewire SFC
     │   ├── report-form.blade.php    # 通報表單（照片選填 / GPS / AI 審核）
+    │   ├── contact-form.blade.php   # 聯絡管理員 modal（前台）
     │   ├── report-list.blade.php    # 通報清單（分頁 + 篩選 + CSV 匯出）
     │   ├── auth-onboarding.blade.php# 登入引導（Google + LINE）
     │   ├── leaderboard.blade.php
