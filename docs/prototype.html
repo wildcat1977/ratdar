@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P.U.M.A. 城市防衛雷達 - 見鼠地圖 MVP</title>
+    
+    <!-- 引入 Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        body { margin: 0; padding: 0; background-color: #0d1117; color: #fff; font-family: sans-serif; }
+        /* 地圖滿版 */
+        #map { width: 100vw; height: 100vh; z-index: 1; }
+        
+        /* 懸浮通報介面 (對齊你看到的 Demo 視覺) */
+        .overlay-ui {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000; /* 確保蓋在地圖上方 */
+            background: rgba(13, 17, 23, 0.85);
+            border: 1px solid #ff4d4f;
+            padding: 20px 40px;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(255, 77, 79, 0.3);
+            backdrop-filter: blur(8px);
+        }
+        
+        .overlay-text {
+            margin: 0 0 15px 0; 
+            color: #aaa; 
+            font-size: 1rem;
+            letter-spacing: 1px;
+        }
+        
+        .overlay-text span {
+            color: #ff4d4f; 
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .report-btn {
+            background: rgba(255, 77, 79, 0.1);
+            color: #ff4d4f;
+            border: 2px solid #ff4d4f;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            letter-spacing: 2px;
+        }
+
+        .report-btn:hover {
+            background: #ff4d4f;
+            color: #fff;
+            box-shadow: 0 0 15px #ff4d4f;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 地圖容器 -->
+    <div id="map"></div>
+
+    <!-- 前端操作 UI -->
+    <div class="overlay-ui">
+        <p class="overlay-text">周邊 1km 警戒通報：<span>124</span></p>
+        <!-- 整合進專案時，這裡可以改用 wire:click 呼叫 Livewire Modal -->
+        <button class="report-btn" onclick="alert('啟動通報雷達！接下來可串接 Livewire 表單')">⚠️ 立即通報</button>
+    </div>
+
+    <!-- 引入 Leaflet 核心 JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- 引入 Leaflet Heatmap 擴充元件 -->
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    
+    <script>
+        // 1. 初始化地圖，視角預設鎖定在台北車站一帶
+        const map = L.map('map', {
+            zoomControl: false // 隱藏預設的放大縮小按鈕，讓畫面更像 App
+        }).setView([25.045, 121.51], 14);
+
+        // 2. 套用科技感暗黑底圖 (CartoDB Dark Matter)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+            subdomains: 'abcd',
+            maxZoom: 19
+        }).addTo(map);
+
+        // 3. 建立模擬數據 (未來這段由 Laravel API 回傳 JSON)
+        // 陣列格式: [緯度, 經度, 權重強度(0.1 ~ 1.0)]
+        const heatData = [
+            [25.042, 121.508, 0.9], // 西門町高風險區
+            [25.043, 121.509, 1.0],
+            [25.041, 121.507, 0.8],
+            [25.047, 121.517, 0.7], // 北車周邊
+            [25.046, 121.515, 0.6],
+            [25.033, 121.565, 0.4]  // 信義區
+        ];
+
+        // 隨機生成一些散佈的通報點來模擬真實狀況
+        for (let i = 0; i < 80; i++) {
+            heatData.push([
+                25.045 + (Math.random() - 0.5) * 0.04,
+                121.510 + (Math.random() - 0.5) * 0.04,
+                Math.random() * 0.6
+            ]);
+        }
+
+        // 4. 渲染熱力圖層
+        const heat = L.heatLayer(heatData, {
+            radius: 20,       // 熱點的擴散半徑
+            blur: 15,         // 邊緣模糊程度
+            maxZoom: 15,      // 達到多少 Zoom 層級時達到最大強度
+            max: 1.0,         // 強度上限
+            gradient: {       // 自定義漸層，營造紅色警戒感
+                0.4: '#1a237e', // 深藍
+                0.6: '#00bcd4', // 青綠
+                0.8: '#ff9800', // 橘黃
+                1.0: '#ff4d4f'  // 警戒紅
+            }
+        }).addTo(map);
+    </script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<?php
+
+namespace App\Filament\Resources\Users\Schemas;
+
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Schema;
+
+class UserForm
+{
+    public static function configure(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                TextInput::make('name')
+                    ->label('名稱')
+                    ->required()
+                    ->maxLength(255),
+
+                TextInput::make('email')
+                    ->label('Email')
+                    ->email()
+                    ->required()
+                    ->unique(ignoreRecord: true)
+                    ->maxLength(255),
+
+                TextInput::make('password')
+                    ->label('密碼')
+                    ->password()
+                    ->dehydrateStateUsing(fn (?string $state) => filled($state) ? bcrypt($state) : null)
+                    ->dehydrated(fn (?string $state) => filled($state))
+                    ->required(fn (string $operation) => $operation === 'create')
+                    ->helperText('編輯時若不變更請留空'),
+
+                Toggle::make('is_admin')
+                    ->label('管理員權限')
+                    ->helperText('開啟後可登入後台並審核回報'),
+            ]);
+    }
+}

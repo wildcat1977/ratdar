@@ -1,0 +1,86 @@
+@import 'tailwindcss';
+@import 'leaflet-control-geocoder/dist/Control.Geocoder.css';
+
+[x-cloak] { display: none !important; }
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@theme {
+    --font-sans: 'Inter', 'Noto Sans TC', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+    --color-radar-bg: #0d1117;
+    --color-radar-panel: #161b22;
+    --color-radar-accent: #ef4444;
+}
+
+.leaflet-container {
+    background: #0d1117;
+    font-family: var(--font-sans);
+}
+
+/* Geocoder 搜尋框深色主題 */
+.leaflet-control-geocoder {
+    background: #1e293b !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+}
+.leaflet-control-geocoder-form input {
+    background: transparent !important;
+    color: #f1f5f9 !important;
+    border: none !important;
+}
+.leaflet-control-geocoder-form input::placeholder { color: #64748b !important; }
+.leaflet-control-geocoder-alternatives {
+    background: #1e293b !important;
+    border-top: 1px solid rgba(255,255,255,0.08) !important;
+}
+.leaflet-control-geocoder-alternatives li:hover { background: rgba(255,255,255,0.06) !important; }
+.leaflet-control-geocoder-alternatives a { color: #e2e8f0 !important; }
+
+/* 縮放按鈕移到右上，避開頂部 header（~72px） */
+.leaflet-top.leaflet-right .leaflet-control-zoom {
+    margin-top: 72px;
+    margin-right: 12px;
+}
+
+/* 小螢幕額外加大點擊區 */
+@media (max-width: 640px) {
+    .leaflet-control-zoom a {
+        width: 36px !important;
+        height: 36px !important;
+        line-height: 36px !important;
+        font-size: 18px !important;
+    }
+}
+
+@keyframes radar-pulse {
+    0%   { transform: scale(0.6); opacity: 0.8; }
+    100% { transform: scale(2.4); opacity: 0; }
+}
+
+/* 全螢幕六角網格（SVG Data URI 雙層偏移法） */
+.radar-tactical-grid {
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='144'%3E%3Cpolygon points='42,24 84,48 84,96 42,120 0,96 0,48' fill='none' stroke='rgba(74,222,128,0.1)' stroke-width='0.8'/%3E%3C/svg%3E"),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='144'%3E%3Cpolygon points='42,24 84,48 84,96 42,120 0,96 0,48' fill='none' stroke='rgba(74,222,128,0.1)' stroke-width='0.8'/%3E%3C/svg%3E");
+    background-size: 84px 144px, 84px 144px;
+    background-position: 0 0, 42px 72px;
+}
+
+/* 1km 揃描圈脈衝動畫（標注 Leaflet SVG path 元素） */
+@keyframes radar-ring-pulse {
+    0%   { stroke-opacity: 0.7; }
+    50%  { stroke-opacity: 0.1; }
+    100% { stroke-opacity: 0.7; }
+}
+path.radar-scan-circle {
+    animation: radar-ring-pulse 3s ease-in-out infinite;
+}
+
+/* 跑馬燈：JS 控制 opacity transition */
+.radar-ticker {
+    transition: opacity 0.4s ease;
+}

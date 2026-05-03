@@ -1,0 +1,23 @@
+@extends('layouts.app')
+
+@section('title', '我的回報 · Rat Radar')
+
+@section('content')
+<div class="min-h-dvh bg-[#0d1117]">
+    {{-- 頂部導覽列 --}}
+    <header class="flex items-center justify-between border-b border-white/10 px-4 py-3">
+        <a href="{{ route('home') }}" class="flex items-center gap-2 text-sm font-semibold text-slate-200">
+            <span class="text-red-500">◎</span> Rat Radar
+        </a>
+        <div class="flex items-center gap-3">
+            <a href="{{ route('leaderboard') }}" class="text-xs text-slate-400 hover:text-slate-200">排行榜</a>
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button class="rounded-full bg-white/10 px-3 py-1.5 text-xs text-slate-300 hover:bg-white/20">登出</button>
+            </form>
+        </div>
+    </header>
+
+    <livewire:user-profile />
+</div>
+@endsection
