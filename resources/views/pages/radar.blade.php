@@ -52,17 +52,20 @@
                     onclick="window.dispatchEvent(new CustomEvent('mouseradar:report-clicked'))"
                     class="mx-auto flex w-full max-w-md items-center justify-center gap-2 rounded-2xl bg-red-600 px-6 py-4 text-base font-bold text-white shadow-[0_0_30px_rgba(239,68,68,0.6)] transition active:scale-95 hover:bg-red-500">
                 <span class="text-xl">⚠️</span>
-                <span>立即回報老鼠</span>
+                <span>立即回報</span>
             </button>
 
             <footer class="mx-auto flex w-full max-w-md items-center justify-between text-[11px] text-slate-500">
-                <a href="{{ route('leaderboard') }}" class="hover:text-slate-300">英雄榜</a>
+                <a href="{{ route('leaderboard') }}" class="hover:text-slate-300">回報榜</a>
                 <a href="{{ route('reports') }}" class="hover:text-slate-300">通報清單</a>
                 @auth
                     <a href="{{ route('profile') }}" class="hover:text-slate-300">我的回報</a>
                 @else
                     <span class="text-slate-700">© {{ date('Y') }} Rat Radar</span>
                 @endauth
+                <button type="button"
+                        onclick="window.dispatchEvent(new CustomEvent('open-contact-form'))"
+                        class="hover:text-slate-300">聯絡管理員</button>
             </footer>
         </div>
     </div>
@@ -70,6 +73,7 @@
     {{-- 登入引導 / 回報表單 (Livewire Modal) --}}
     <livewire:auth-onboarding />
     <livewire:report-form />
+    <livewire:contact-form />
 </div>
 
 @if (session('open_report_form'))
