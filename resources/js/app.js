@@ -83,7 +83,9 @@ window.onPhotoChange = async function (input, wire) {
     wire.setLocationFromExif(loc.lat, loc.lng);
 };
 
-const TILE_URL = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+const TILE_URL_DARK  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+const TILE_URL_LIGHT = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+const MAP_THEME_KEY  = 'mouseradar_map_theme';
 const TILE_OPTIONS = {
     attribution: '&copy; OpenStreetMap &copy; CARTO',
     subdomains: 'abcd',
@@ -95,6 +97,9 @@ let heatLayer = null;
 let markersLayer = null;
 let clusterLayer = null;
 let poisonLayer = null;        // 毒餌獨立圖層（不分群、永遠顯示）
+let currentTileLayer = null;   // 底圖圖層（隨主題切換）
+// 讀 localStorage，預設 light（亮色對大多數使用者更易閱讀）
+let currentTheme = (() => { try { return localStorage.getItem(MAP_THEME_KEY) || 'light'; } catch (_) { return 'light'; } })();
 let radarCircle = null;  // 1km 防禦圈
 
 // ── 跑馬燈廣播（從 #radar-map data-ticker 讀取真實資料）───────
@@ -243,6 +248,40 @@ function updateMarkersVisibility(zoom) {
     }
 }
 
+// ── 地圖主題切換 ──────────────────────────────────────────────
+function setMapTheme(theme) {
+    currentTheme = theme;
+    try { localStorage.setItem(MAP_THEME_KEY, theme); } catch (_) {}
+    const mapEl = document.getElementById('radar-map');
+    if (mapEl) mapEl.classList.toggle('map-theme-dark', theme === 'dark');
+    if (radarMap && currentTileLayer) {
+        radarMap.removeLayer(currentTileLayer);
+        currentTileLayer = L.tileLayer(
+            theme === 'dark' ? TILE_URL_DARK : TILE_URL_LIGHT,
+            TILE_OPTIONS
+        ).addTo(radarMap);
+    }
+}
+
+const ThemeToggleControl = L.Control.extend({
+    options: { position: 'topleft' },
+    onAdd() {
+        const btn = L.DomUtil.create('button', 'leaflet-theme-toggle');
+        btn.type = 'button';
+        const refresh = () => {
+            btn.textContent = currentTheme === 'dark' ? '☀️ 亮色模式' : '🌙 暗色模式';
+            btn.title = currentTheme === 'dark' ? '切換至亮色地圖' : '切換至暗色地圖';
+        };
+        refresh();
+        L.DomEvent.disableClickPropagation(btn);
+        btn.addEventListener('click', () => {
+            setMapTheme(currentTheme === 'dark' ? 'light' : 'dark');
+            refresh();
+        });
+        return btn;
+    },
+});
+
 // ── 主雷達地圖 ──────────────────────────────────────────────
 function initRadar() {
     const el = document.getElementById('radar-map');
@@ -255,9 +294,13 @@ function initRadar() {
     const markersData = JSON.parse(el.dataset.markers || '[]');
     const poisonData = JSON.parse(el.dataset.poisonMarkers || '[]');
 
+    el.classList.toggle('map-theme-dark', currentTheme === 'dark');
     radarMap = L.map(el, { zoomControl: false, attributionControl: false }).setView([lat, lng], zoom);
 
-    L.tileLayer(TILE_URL, TILE_OPTIONS).addTo(radarMap);
+    currentTileLayer = L.tileLayer(
+        currentTheme === 'dark' ? TILE_URL_DARK : TILE_URL_LIGHT,
+        TILE_OPTIONS
+    ).addTo(radarMap);
     L.control.zoom({ position: 'topright' }).addTo(radarMap);
 
     heatLayer = L.heatLayer(points, {
@@ -281,6 +324,23 @@ function initRadar() {
         '☠️ 毒餌分佈': poisonLayer,
     };
     L.control.layers(null, overlayMaps, { position: 'topright', collapsed: false }).addTo(radarMap);
+    new ThemeToggleControl().addTo(radarMap);
+
+    // 地標搜尋（訪客可用，右上縮合圖示，展開後搜尋）
+    createGeocoder({
+        defaultMarkGeocode: false,
+        collapsed: true,
+        placeholder: '搜尋地標或路名…(尚不支援詳細地址)',
+        position: 'topleft',
+        geocoder: geocoders.nominatim({
+            serviceUrl: 'https://nominatim.openstreetmap.org/',
+            geocodingQueryParams: { countrycodes: 'tw', limit: 5 },
+        }),
+    })
+    .on('markgeocode', (e) => {
+        radarMap.setView(e.geocode.center, 15);
+    })
+    .addTo(radarMap);
 
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -337,7 +397,7 @@ window.initPinMap = function (el, wire) {
     const map = L.map(el, { zoomControl: true, attributionControl: false })
         .setView([DEFAULT_LAT, DEFAULT_LNG], 17);
 
-    L.tileLayer(TILE_URL, TILE_OPTIONS).addTo(map);
+    L.tileLayer(TILE_URL_LIGHT, TILE_OPTIONS).addTo(map);
 
     // 地址搜尋（Nominatim / OSM，免費無 API Key）
     createGeocoder({
@@ -359,7 +419,7 @@ window.initPinMap = function (el, wire) {
             const btn = L.DomUtil.create('button', '');
             btn.innerHTML = '📍 我的位置';
             btn.title = '取得目前 GPS 位置';
-            btn.style.cssText = 'padding:5px 10px;font-size:12px;cursor:pointer;background:#1e293b;color:#f1f5f9;border:1px solid rgba(255,255,255,0.15);border-radius:6px;white-space:nowrap;';
+            btn.style.cssText = 'padding:5px 10px;font-size:12px;cursor:pointer;background:#fff;color:#1e293b;border:1px solid rgba(0,0,0,0.2);border-radius:6px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,0.12);';
             L.DomEvent.on(btn, 'click', (ev) => {
                 L.DomEvent.stopPropagation(ev);
                 if (!navigator.geolocation) return;
