@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Report;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -9,9 +10,15 @@ new class extends Component
     use WithPagination;
 
     public string $filterStatus = '';
+    public string $filterType   = '';
     public string $search       = '';
 
     public function updatingFilterStatus(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingFilterType(): void
     {
         $this->resetPage();
     }
@@ -31,39 +38,69 @@ new class extends Component
             $query->where('status', $this->filterStatus);
         }
 
+        if ($this->filterType) {
+            $query->where('type', $this->filterType);
+        }
+
         if ($this->search) {
             $query->where('description', 'ilike', '%' . $this->search . '%');
         }
 
         $reports = $query->latest()->paginate(15);
 
-        // 所有可見通報的座標（給地圖 modal 顯示背景點）
-        $allCoords = Report::query()
-            ->whereNotIn('status', [Report::STATUS_REJECTED])
-            ->get(['id', 'latitude', 'longitude', 'address', 'status']);
+        // 所有可見通報的座標（給地圖 modal 顯示背景點）—— 快取 2 分鐘
+        $allCoords = collect(Cache::remember('report_list.all_coords', 120, function () {
+            return Report::query()
+                ->whereNotIn('status', [Report::STATUS_REJECTED])
+                ->get(['id', 'latitude', 'longitude', 'address', 'status'])
+                ->toArray();
+        }));
 
-        return view('livewire.report-list', compact('reports', 'allCoords'));
+        // 分區統計 —— 快取 2 分鐘
+        $districtStats = collect(Cache::remember('report_list.district_stats', 120, function () {
+            return Report::query()
+                ->whereNotIn('status', [Report::STATUS_REJECTED])
+                ->whereNotNull('address')
+                ->get(['address', 'status'])
+                ->groupBy(fn($r) => explode(' ', trim($r->address))[1] ?? explode(' ', trim($r->address))[0] ?? '其他')
+                ->map(fn($rows) => [
+                    'total'         => $rows->count(),
+                    'approved'      => $rows->where('status', Report::STATUS_APPROVED)->count(),
+                    'pending'       => $rows->where('status', Report::STATUS_PENDING)->count(),
+                    'resolved'      => $rows->where('status', Report::STATUS_RESOLVED)->count(),
+                    'reported_1999' => $rows->where('status', Report::STATUS_REPORTED_1999)->count(),
+                ])
+                ->sortByDesc('total')
+                ->toArray();
+        }));
+
+        return view('livewire.report-list', compact('reports', 'allCoords', 'districtStats'));
     }
 }; ?>
 
 @php
 $statusConfig = [
     'pending'       => ['label' => '待審核',    'class' => 'bg-amber-500/20 text-amber-400'],
-    'approved'      => ['label' => '已審核',    'class' => 'bg-green-500/20 text-green-400'],
+    'approved'      => ['label' => '已建立',    'class' => 'bg-green-500/20 text-green-400'],
     'reported_1999' => ['label' => '已通報1999','class' => 'bg-blue-500/20 text-blue-400'],
     'resolved'      => ['label' => '已處理',    'class' => 'bg-slate-500/20 text-slate-400'],
+];
+$typeConfig = [
+    'rat'    => ['label' => '🐀 鼠蹤', 'class' => 'bg-red-500/15 text-red-300 ring-1 ring-red-500/30'],
+    'poison' => ['label' => '☠️ 毒餌', 'class' => 'bg-purple-500/15 text-purple-300 ring-1 ring-purple-500/30'],
 ];
 @endphp
 
 <div
     x-data="{
+        tab: 'list',
         showMap: false,
         mapLat: 0,
         mapLng: 0,
         mapInfo: '',
         mapId: null,
         _map: null,
-        allCoords: @js($allCoords->map(fn($r) => ['id' => $r->id, 'lat' => (float)$r->latitude, 'lng' => (float)$r->longitude, 'addr' => $r->address ?? ''])),
+        allCoords: @js($allCoords->map(fn($r) => ['id' => $r['id'], 'lat' => (float)$r['latitude'], 'lng' => (float)$r['longitude'], 'addr' => $r['address'] ?? ''])),
 
         openMap(id, lat, lng, info) {
             this.mapId   = id;
@@ -143,6 +180,23 @@ $statusConfig = [
         </a>
     </div>
 
+    {{-- Tab 切換 --}}
+    <div class="mb-5 flex gap-1 rounded-xl bg-white/5 p-1">
+        <button @click="tab='list'"
+                :class="tab==='list' ? 'bg-[#161b22] text-slate-100 shadow' : 'text-slate-400 hover:text-slate-200'"
+                class="flex-1 rounded-lg px-4 py-2 text-sm font-medium transition">
+            通報清單
+        </button>
+        <button @click="tab='stats'"
+                :class="tab==='stats' ? 'bg-[#161b22] text-slate-100 shadow' : 'text-slate-400 hover:text-slate-200'"
+                class="flex-1 rounded-lg px-4 py-2 text-sm font-medium transition">
+            分區統計
+        </button>
+    </div>
+
+    {{-- 通報清單 tab --}}
+    <div x-show="tab==='list'">
+
     {{-- 篩選列 --}}
     <div class="mb-4 flex flex-wrap gap-2">
         <input wire:model.live.debounce.300ms="search"
@@ -157,14 +211,23 @@ $statusConfig = [
                 <option value="{{ $key }}" class="bg-[#161b22]">{{ $cfg['label'] }}</option>
             @endforeach
         </select>
+
+        <select wire:model.live="filterType"
+                class="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-red-500">
+            <option value="">全部類型</option>
+            @foreach($typeConfig as $key => $cfg)
+                <option value="{{ $key }}" class="bg-[#161b22]">{{ $cfg['label'] }}</option>
+            @endforeach
+        </select>
     </div>
 
-    {{-- 資料表格 --}}
-    <div class="overflow-x-auto rounded-xl border border-white/10">
+    {{-- 資料表格（桌機） --}}
+    <div class="hidden overflow-x-auto rounded-xl border border-white/10 sm:block">
         <table class="w-full text-sm">
             <thead class="border-b border-white/10 bg-white/5 text-left text-xs text-slate-400">
                 <tr>
                     <th class="w-28 px-4 py-3 font-medium">通報時間</th>
+                    <th class="w-20 px-4 py-3 font-medium">類型</th>
                     <th class="w-32 px-4 py-3 font-medium">地點</th>
                     <th class="w-24 px-4 py-3 font-medium">狀態</th>
                     <th class="w-16 px-4 py-3 font-medium">照片</th>
@@ -177,6 +240,12 @@ $statusConfig = [
                         <td class="whitespace-nowrap px-4 py-3 text-slate-400">
                             {{ $report->created_at->format('Y-m-d') }}<br>
                             <span class="text-xs text-slate-600">{{ $report->created_at->format('H:i') }}</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            @php $tcfg = $typeConfig[$report->type] ?? $typeConfig['rat']; @endphp
+                            <span class="rounded-full px-2 py-0.5 text-xs font-medium {{ $tcfg['class'] }}">
+                                {{ $tcfg['label'] }}
+                            </span>
                         </td>
                         <td class="px-4 py-3 text-slate-300">
                             <div class="flex items-start gap-2">
@@ -224,11 +293,74 @@ $statusConfig = [
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="px-4 py-10 text-center text-slate-500">尚無通報紀錄</td>
+                        <td colspan="6" class="px-4 py-10 text-center text-slate-500">尚無通報紀錄</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
+    </div>
+
+    {{-- 卡片列表（手機） --}}
+    <div class="space-y-3 sm:hidden">
+        @forelse($reports as $report)
+            @php
+                $cfg  = $statusConfig[$report->status] ?? ['label' => $report->status, 'class' => 'bg-white/10 text-slate-400'];
+                $tcfg = $typeConfig[$report->type] ?? $typeConfig['rat'];
+            @endphp
+            <div class="rounded-xl border border-white/10 bg-white/5 p-4">
+                {{-- 頂列：時間 + 類型 + 狀態 --}}
+                <div class="mb-3 flex items-center justify-between gap-2">
+                    <span class="text-xs text-slate-400">
+                        {{ $report->created_at->format('Y-m-d H:i') }}
+                    </span>
+                    <div class="flex items-center gap-1.5">
+                        <span class="rounded-full px-2 py-0.5 text-xs font-medium {{ $tcfg['class'] }}">
+                            {{ $tcfg['label'] }}
+                        </span>
+                        <span class="rounded-full px-2 py-0.5 text-xs font-medium {{ $cfg['class'] }}">
+                            {{ $cfg['label'] }}
+                        </span>
+                    </div>
+                </div>
+                {{-- 地點列 --}}
+                <div class="mb-2 flex items-start gap-2 text-sm text-slate-300">
+                    <button
+                        @click="openMap({{ $report->id }}, {{ (float)$report->latitude }}, {{ (float)$report->longitude }}, '{{ addslashes($report->address ?? number_format($report->latitude, 4).', '.number_format($report->longitude, 4)) }}')"
+                        title="在地圖上查看位置"
+                        class="mt-0.5 shrink-0 text-slate-500 transition hover:text-red-400">
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/>
+                            <line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
+                            <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
+                        </svg>
+                    </button>
+                    <span>
+                        @if($report->address)
+                            {{ $report->address }}
+                        @else
+                            <a href="https://maps.google.com/?q={{ $report->latitude }},{{ $report->longitude }}"
+                               target="_blank" rel="noopener"
+                               class="text-slate-500 hover:text-slate-300">
+                                {{ number_format($report->latitude, 4) }}, {{ number_format($report->longitude, 4) }}
+                            </a>
+                        @endif
+                    </span>
+                </div>
+                {{-- 照片 + 說明 --}}
+                <div class="flex items-start gap-3">
+                    @if($report->image_path)
+                        <a href="{{ Storage::disk('public')->url($report->image_path) }}" target="_blank" rel="noopener" class="shrink-0">
+                            <img src="{{ Storage::disk('public')->url($report->image_path) }}"
+                                 alt="通報照片"
+                                 class="h-16 w-16 rounded-lg object-cover ring-1 ring-white/10 transition hover:ring-red-500/60">
+                        </a>
+                    @endif
+                    <p class="text-sm leading-relaxed text-slate-300">{{ $report->description ?? '—' }}</p>
+                </div>
+            </div>
+        @empty
+            <p class="py-10 text-center text-slate-500">尚無通報紀錄</p>
+        @endforelse
     </div>
 
     {{-- 分頁 --}}
@@ -242,4 +374,107 @@ $statusConfig = [
     <p class="mt-3 text-right text-xs text-slate-600">
         共 {{ $reports->total() }} 筆通報
     </p>
-</div>
+
+    </div>{{-- end tab=list --}}
+
+    {{-- 分區統計 tab --}}
+    @php
+        $districts   = $districtStats->keys()->values()->toArray();
+        $totals      = $districtStats->pluck('total')->values()->toArray();
+        $chartColors = ['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#a855f7','#ec4899','#14b8a6','#f59e0b','#6366f1','#84cc16','#06b6d4','#d946ef','#64748b','#e11d48'];
+        $totalAll    = array_sum($totals);
+    @endphp
+    <div x-show="tab==='stats'"
+         x-init="
+            $watch('tab', v => {
+                if (v !== 'stats') return;
+                $nextTick(() => {
+                    const canvas = document.getElementById('district-pie');
+                    if (!canvas || canvas._chartInstance) return;
+                    const chart = new Chart(canvas, {
+                        type: 'pie',
+                        data: {
+                            labels: @js($districts),
+                            datasets: [{
+                                data: @js($totals),
+                                backgroundColor: @js(array_slice($chartColors, 0, count($districts))),
+                                borderColor: '#0d1117',
+                                borderWidth: 2,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: { color: '#94a3b8', font: { size: 12 }, padding: 14 }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: ctx => ` ${ctx.label}：${ctx.parsed} 筆（${((ctx.parsed / {{ $totalAll ?: 1 }}) * 100).toFixed(1)}%）`
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    canvas._chartInstance = chart;
+                });
+            });
+         ">
+
+        @if($districtStats->isEmpty())
+            <p class="py-16 text-center text-slate-500">尚無具有地址的通報</p>
+        @else
+        {{-- 圓餅圖 --}}
+        <div class="mb-6 flex justify-center">
+            <div class="w-full max-w-xs">
+                <canvas id="district-pie"></canvas>
+            </div>
+        </div>
+
+        {{-- 統計列表 --}}
+        <div class="overflow-x-auto rounded-xl border border-white/10">
+            <table class="w-full text-sm">
+                <thead class="border-b border-white/10 bg-white/5 text-left text-xs text-slate-400">
+                    <tr>
+                        <th class="px-4 py-3 font-medium">行政區</th>
+                        <th class="px-4 py-3 text-right font-medium">通報數</th>
+                        <th class="px-4 py-3 text-right font-medium">已核准</th>
+                        <th class="px-4 py-3 text-right font-medium">待審核</th>
+                        <th class="px-4 py-3 text-right font-medium">已處理</th>
+                        <th class="px-4 py-3 font-medium">佔比</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    @foreach($districtStats as $district => $stat)
+                    @php $pct = $totalAll > 0 ? round($stat['total'] / $totalAll * 100, 1) : 0; @endphp
+                    <tr class="transition hover:bg-white/5">
+                        <td class="px-4 py-3 font-medium text-slate-200">{{ $district }}</td>
+                        <td class="px-4 py-3 text-right text-slate-100">{{ $stat['total'] }}</td>
+                        <td class="px-4 py-3 text-right text-red-400">{{ $stat['approved'] }}</td>
+                        <td class="px-4 py-3 text-right text-amber-400">{{ $stat['pending'] }}</td>
+                        <td class="px-4 py-3 text-right text-green-400">{{ $stat['resolved'] + $stat['reported_1999'] }}</td>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-2">
+                                <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
+                                    <div class="h-full rounded-full bg-red-500" style="width: {{ $pct }}%"></div>
+                                </div>
+                                <span class="w-10 text-right text-xs text-slate-400">{{ $pct }}%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+                <tfoot class="border-t border-white/10 bg-white/5">
+                    <tr>
+                        <td class="px-4 py-3 text-xs font-semibold text-slate-400">合計</td>
+                        <td class="px-4 py-3 text-right text-sm font-bold text-slate-100">{{ $totalAll }}</td>
+                        <td colspan="4"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        @endif
+
+    </div>{{-- end tab=stats --}}
+</div>{{-- end x-data --}}

@@ -19,6 +19,15 @@ class ReportForm
                 View::make('filament.components.map-picker')
                     ->columnSpanFull(),
 
+                Select::make('type')
+                    ->label('類型')
+                    ->options([
+                        Report::TYPE_RAT    => '🐀 鼠蹤',
+                        Report::TYPE_POISON => '☠️ 毒餌 / 老鼠藥',
+                    ])
+                    ->default(Report::TYPE_RAT)
+                    ->required(),
+
                 TextInput::make('latitude')
                     ->label('緯度')
                     ->numeric()

@@ -3,6 +3,10 @@ import 'leaflet.heat';
 import 'leaflet.markercluster';
 import { geocoder as createGeocoder, geocoders } from 'leaflet-control-geocoder';
 import exifr from 'exifr';
+import { Chart, ArcElement, Tooltip, Legend, PieController } from 'chart.js';
+
+Chart.register(ArcElement, Tooltip, Legend, PieController);
+window.Chart = Chart;
 
 // 讓 Alpine x-init inline 可以直接用 window.L
 window.L = L;
@@ -90,6 +94,7 @@ let radarMap = null;
 let heatLayer = null;
 let markersLayer = null;
 let clusterLayer = null;
+let poisonLayer = null;        // 毒餌獨立圖層（不分群、永遠顯示）
 let radarCircle = null;  // 1km 防禦圈
 
 // ── 跑馬燈廣播（從 #radar-map data-ticker 讀取真實資料）───────
@@ -111,7 +116,7 @@ function initTicker() {
     }, 7000);
 }
 
-const MARKER_ZOOM_THRESHOLD = 16;
+const MARKER_ZOOM_THRESHOLD = 13;  // 13 級以上才顯示獨立圖層，以下用 cluster
 
 const MARKER_STYLES = {
     approved: {
@@ -123,6 +128,10 @@ const MARKER_STYLES = {
     resolved: {
         radius: 9, fillColor: '#22c55e', color: '#ffffff', weight: 2, opacity: 1, fillOpacity: 0.9,
     },
+};
+
+const POISON_MARKER_STYLE = {
+    radius: 10, fillColor: '#a855f7', color: '#ffffff', weight: 2, opacity: 1, fillOpacity: 0.95,
 };
 
 const STATUS_LABEL = {
@@ -150,7 +159,12 @@ function createPopupEl(m) {
 
     const statusEl = document.createElement('div');
     statusEl.style.cssText = 'margin-bottom:4px;font-weight:600;font-size:12px';
-    statusEl.textContent = STATUS_LABEL[m.status] ?? STATUS_LABEL.approved;
+    if (m.type === 'poison') {
+        statusEl.textContent = '☠️ 毒餌通報';
+        statusEl.style.color = '#a855f7';
+    } else {
+        statusEl.textContent = STATUS_LABEL[m.status] ?? STATUS_LABEL.approved;
+    }
     wrap.appendChild(statusEl);
 
     if (m.desc) {
@@ -183,6 +197,16 @@ function buildClusterLayer(markersData) {
         zoomToBoundsOnClick: true,
         maxClusterRadius: 50,
         spiderfyOnMaxZoom: true,
+        iconCreateFunction(c) {
+            const n = c.getChildCount();
+            const size = n < 10 ? 32 : n < 100 ? 38 : 44;
+            return L.divIcon({
+                html: `<div style="width:${size}px;height:${size}px;background:#ef4444;border:2px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;box-shadow:0 0 8px rgba(239,68,68,0.55)">${n}</div>`,
+                className: '',
+                iconSize: [size, size],
+                iconAnchor: [size / 2, size / 2],
+            });
+        },
     });
     markersData.forEach((m) => {
         const circle = L.circleMarker([m.lat, m.lng], markerStyle(m.status));
@@ -190,6 +214,22 @@ function buildClusterLayer(markersData) {
         cluster.addLayer(circle);
     });
     return cluster;
+}
+
+function buildPoisonLayer(poisonData) {
+    const layer = L.layerGroup();
+    poisonData.forEach((m) => {
+        const icon = L.divIcon({
+            html: `<div style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:18px;background:#a855f7;border:2px solid #fff;border-radius:50%;box-shadow:0 0 10px rgba(168,85,247,0.7);color:#fff">☠</div>`,
+            className: 'poison-marker',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15],
+        });
+        const marker = L.marker([m.lat, m.lng], { icon });
+        marker.bindPopup(createPopupEl({ ...m, type: 'poison' }), { maxWidth: 280 });
+        layer.addLayer(marker);
+    });
+    return layer;
 }
 
 function updateMarkersVisibility(zoom) {
@@ -213,6 +253,7 @@ function initRadar() {
     const zoom = parseInt(el.dataset.defaultZoom, 10);
     const points = JSON.parse(el.dataset.heatPoints || '[]');
     const markersData = JSON.parse(el.dataset.markers || '[]');
+    const poisonData = JSON.parse(el.dataset.poisonMarkers || '[]');
 
     radarMap = L.map(el, { zoomControl: false, attributionControl: false }).setView([lat, lng], zoom);
 
@@ -220,16 +261,26 @@ function initRadar() {
     L.control.zoom({ position: 'topright' }).addTo(radarMap);
 
     heatLayer = L.heatLayer(points, {
-        radius: 28,
-        blur: 22,
+        radius: 30,
+        blur: 18,
         maxZoom: 17,
-        gradient: { 0.2: '#7f1d1d', 0.5: '#ef4444', 0.9: '#fee2e2' },
+        minOpacity: 0.35,
+        gradient: { 0.15: '#7f1d1d', 0.45: '#ef4444', 0.7: '#f97316', 0.9: '#fbbf24' },
     }).addTo(radarMap);
 
     markersLayer = buildMarkersLayer(markersData);
     clusterLayer = buildClusterLayer(markersData);
+    poisonLayer  = buildPoisonLayer(poisonData);
+    poisonLayer.addTo(radarMap);
     radarMap.on('zoomend', () => updateMarkersVisibility(radarMap.getZoom()));
     updateMarkersVisibility(zoom);
+
+    // 圖層切換控制（右上）
+    const overlayMaps = {
+        '🐀 鼠蹤熱區':   heatLayer,
+        '☠️ 毒餌分佈': poisonLayer,
+    };
+    L.control.layers(null, overlayMaps, { position: 'topright', collapsed: false }).addTo(radarMap);
 
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -423,6 +474,11 @@ document.addEventListener('livewire:initialized', () => {
             markersLayer = buildMarkersLayer(e.detail.markers);
             clusterLayer = buildClusterLayer(e.detail.markers);
             updateMarkersVisibility(radarMap.getZoom());
+        }
+        if (radarMap && Array.isArray(e.detail?.poisonMarkers)) {
+            if (poisonLayer) radarMap.removeLayer(poisonLayer);
+            poisonLayer = buildPoisonLayer(e.detail.poisonMarkers);
+            poisonLayer.addTo(radarMap);
         }
     });
 });

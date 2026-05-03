@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Cache;
 
 class Report extends Model
 {
@@ -12,6 +13,15 @@ class Report extends Model
     public const STATUS_REJECTED      = 'rejected';
     public const STATUS_REPORTED_1999 = 'reported_1999';
     public const STATUS_RESOLVED      = 'resolved';
+
+    /** 通報類型 */
+    public const TYPE_RAT    = 'rat';     // 發現鼠蹤
+    public const TYPE_POISON = 'poison';  // 發現毒餌 / 老鼠藥
+
+    public const TYPES = [
+        self::TYPE_RAT,
+        self::TYPE_POISON,
+    ];
 
     /** 地圖上可公開顯示的狀態（除 pending/rejected 以外皆顯示） */
     public const VISIBLE_STATUSES = [
@@ -22,6 +32,7 @@ class Report extends Model
 
     protected $fillable = [
         'user_id',
+        'type',
         'latitude',
         'longitude',
         'address',
@@ -43,11 +54,33 @@ class Report extends Model
         return $this->belongsTo(\App\Models\User::class);
     }
 
+    protected static function booted(): void
+    {
+        static::saved(function () {
+            Cache::forget('report_list.all_coords');
+            Cache::forget('report_list.district_stats');
+        });
+        static::deleted(function () {
+            Cache::forget('report_list.all_coords');
+            Cache::forget('report_list.district_stats');
+        });
+    }
+
     /**
      * Reports 可公開顯示於熱力圖（approved、已通報、已處理）
      */
     public function scopeVisible($query)
     {
         return $query->whereIn('status', self::VISIBLE_STATUSES);
+    }
+
+    public function scopeRats($query)
+    {
+        return $query->where('type', self::TYPE_RAT);
+    }
+
+    public function scopePoisons($query)
+    {
+        return $query->where('type', self::TYPE_POISON);
     }
 }

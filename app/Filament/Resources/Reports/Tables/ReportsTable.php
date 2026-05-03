@@ -29,6 +29,18 @@ class ReportsTable
                     ->default('訪客')
                     ->searchable(),
 
+                BadgeColumn::make('type')
+                    ->label('類型')
+                    ->colors([
+                        'danger'  => Report::TYPE_RAT,
+                        'primary' => Report::TYPE_POISON,
+                    ])
+                    ->formatStateUsing(fn (string $state) => match ($state) {
+                        Report::TYPE_RAT    => '🐀 鼠蹤',
+                        Report::TYPE_POISON => '☠️ 毒餌',
+                        default => $state,
+                    }),
+
                 ImageColumn::make('image_path')
                     ->label('照片')
                     ->disk('public')
@@ -84,6 +96,12 @@ class ReportsTable
                     ->sortable(),
             ])
             ->filters([
+                SelectFilter::make('type')
+                    ->label('類型篩選')
+                    ->options([
+                        Report::TYPE_RAT    => '🐀 鼠蹤',
+                        Report::TYPE_POISON => '☠️ 毒餌',
+                    ]),
                 SelectFilter::make('status')
                     ->label('狀態篩選')
                     ->options([

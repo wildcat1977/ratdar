@@ -12,6 +12,7 @@ new class extends Component
     {
         return Report::query()
             ->visible()
+            ->rats()
             ->select(['latitude', 'longitude'])
             ->limit(5000)
             ->get()
@@ -23,6 +24,7 @@ new class extends Component
     {
         return Report::query()
             ->visible()
+            ->rats()
             ->select(['latitude', 'longitude', 'image_path', 'description', 'created_at', 'status'])
             ->latest()
             ->limit(5000)
@@ -34,6 +36,28 @@ new class extends Component
                 'desc'   => $r->description,
                 'at'     => $r->created_at->diffForHumans(),
                 'status' => $r->status,
+                'type'   => Report::TYPE_RAT,
+            ])
+            ->all();
+    }
+
+    public function getPoisonMarkersProperty(): array
+    {
+        return Report::query()
+            ->visible()
+            ->poisons()
+            ->select(['latitude', 'longitude', 'image_path', 'description', 'created_at', 'status'])
+            ->latest()
+            ->limit(5000)
+            ->get()
+            ->map(fn ($r) => [
+                'lat'    => (float) $r->latitude,
+                'lng'    => (float) $r->longitude,
+                'img'    => $r->image_path ? asset('storage/' . $r->image_path) : null,
+                'desc'   => $r->description,
+                'at'     => $r->created_at->diffForHumans(),
+                'status' => $r->status,
+                'type'   => Report::TYPE_POISON,
             ])
             ->all();
     }
@@ -48,9 +72,10 @@ new class extends Component
             ->whereNotNull('description')
             ->latest()
             ->limit(6)
-            ->get(['description', 'created_at'])
+            ->get(['type', 'description', 'created_at'])
             ->each(function ($r) use (&$messages) {
-                $messages[] = '📡 系統廣播：' . $r->created_at->diffForHumans()
+                $tag = $r->type === Report::TYPE_POISON ? '☠️ 毒餌通報' : '📡 系統廣播';
+                $messages[] = $tag . '：' . $r->created_at->diffForHumans()
                     . '，有市民通報：' . Str::limit($r->description, 25);
             });
 
@@ -59,13 +84,17 @@ new class extends Component
             'reports as n' => fn ($q) => $q->where('status', Report::STATUS_APPROVED),
         ])->orderByDesc('n')->first();
         if ($top && $top->n > 0) {
-            $messages[] = '🏆 英雄榜冠軍 ' . $top->name . ' 已累計通報 ' . $top->n . ' 筆鼠蹤';
+            $messages[] = '🏆 英雄榜冠軍 ' . $top->name . ' 已累計通報 ' . $top->n . ' 筆';
         }
 
         // 全站累積通報數
-        $total = Report::query()->visible()->count();
-        if ($total > 0) {
-            $messages[] = '📊 鼠蹤雷達目前共收到 ' . $total . ' 筆市民通報，持續更新中';
+        $ratTotal    = Report::query()->visible()->rats()->count();
+        $poisonTotal = Report::query()->visible()->poisons()->count();
+        if ($ratTotal > 0) {
+            $messages[] = '📊 鼠蹤雷達已收 ' . $ratTotal . ' 筆鼠蹤通報';
+        }
+        if ($poisonTotal > 0) {
+            $messages[] = '☠️ 毒餌警戒網已收 ' . $poisonTotal . ' 筆毒餌通報';
         }
 
         return $messages ?: ['📡 系統運作中，等待通報資料…'];
@@ -75,8 +104,9 @@ new class extends Component
     public function refreshHeat(): void
     {
         $this->dispatch('mouseradar:heat-updated',
-            points:  $this->getHeatPointsProperty(),
-            markers: $this->getMarkersProperty(),
+            points:        $this->getHeatPointsProperty(),
+            markers:       $this->getMarkersProperty(),
+            poisonMarkers: $this->getPoisonMarkersProperty(),
         );
     }
 }; ?>
@@ -91,5 +121,6 @@ new class extends Component
     data-nearby-radius="{{ config('radar.nearby_radius_km') }}"
     data-heat-points='@json($this->heatPoints)'
     data-markers='@json($this->markers)'
+    data-poison-markers='@json($this->poisonMarkers)'
     data-ticker='@json($this->tickerMessages)'
 ></div>

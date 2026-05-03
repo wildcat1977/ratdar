@@ -123,6 +123,15 @@ return [
             'handler' => NullHandler::class,
         ],
 
+        // AI 圖片審核專用 log，每日輪替，保留 30 天
+        'moderation' => [
+            'driver' => 'daily',
+            'path'   => storage_path('logs/moderation.log'),
+            'level'  => 'info',
+            'days'   => 30,
+            'replace_placeholders' => true,
+        ],
+
         'emergency' => [
             'path' => storage_path('logs/laravel.log'),
         ],
