@@ -7,6 +7,7 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 
 class ReportForm
@@ -15,6 +16,9 @@ class ReportForm
     {
         return $schema
             ->components([
+                View::make('filament.components.map-picker')
+                    ->columnSpanFull(),
+
                 TextInput::make('latitude')
                     ->label('緯度')
                     ->numeric()

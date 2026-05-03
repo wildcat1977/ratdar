@@ -61,7 +61,7 @@
                 @auth
                     <a href="{{ route('profile') }}" class="hover:text-slate-300">我的回報</a>
                 @else
-                    <a href="{{ route('leaderboard') }}" class="hover:text-slate-300">排行榜</a>
+                    <span class="text-slate-700">© {{ date('Y') }} Rat Radar</span>
                 @endauth
             </footer>
         </div>

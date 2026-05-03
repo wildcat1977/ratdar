@@ -16,4 +16,37 @@ class EditReport extends EditRecord
             DeleteAction::make(),
         ];
     }
+
+    /**
+     * 儲存後自動對新座標執行 reverse geocode，更新行政區地址
+     */
+    protected function afterSave(): void
+    {
+        $record = $this->getRecord();
+
+        try {
+            $resp = (new \GuzzleHttp\Client([
+                'headers' => ['User-Agent' => 'RatRadar/1.0 (ratdar.taipei)'],
+                'timeout' => 8,
+            ]))->get('https://nominatim.openstreetmap.org/reverse', [
+                'query' => [
+                    'lat'             => $record->latitude,
+                    'lon'             => $record->longitude,
+                    'format'          => 'json',
+                    'accept-language' => 'zh-TW',
+                ],
+            ]);
+
+            $data     = json_decode((string) $resp->getBody(), true);
+            $a        = $data['address'] ?? [];
+            $city     = $a['city'] ?? $a['county'] ?? $a['state'] ?? '';
+            $district = $a['city_district'] ?? $a['suburb'] ?? $a['town'] ?? $a['village'] ?? '';
+            $parts    = array_filter([$city, $district]);
+            $address  = implode(' ', $parts) ?: null;
+
+            $record->updateQuietly(['address' => $address]);
+        } catch (\Throwable) {
+            // geocode 失敗不阻止儲存，靜默略過
+        }
+    }
 }
