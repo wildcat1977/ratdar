@@ -16,34 +16,57 @@
 }
 
 .leaflet-container {
-    background: #0d1117;
     font-family: var(--font-sans);
 }
 
-/* Geocoder 搜尋框深色主題 */
+/* 雷達主地圖：亮色（預設）／暗色（由 .map-theme-dark 切換） */
+#radar-map {
+    background: #f1f5f9;
+}
+#radar-map.map-theme-dark {
+    background: #0d1117;
+}
+
+/* Geocoder 搜尋框（亮色預設） */
 .leaflet-control-geocoder {
-    background: #1e293b !important;
-    border: 1px solid rgba(255,255,255,0.12) !important;
+    background: #ffffff !important;
+    border: 1px solid rgba(0,0,0,0.2) !important;
     border-radius: 8px !important;
     box-shadow: none !important;
 }
 .leaflet-control-geocoder-form input {
     background: transparent !important;
-    color: #f1f5f9 !important;
+    color: #1e293b !important;
     border: none !important;
 }
-.leaflet-control-geocoder-form input::placeholder { color: #64748b !important; }
+.leaflet-control-geocoder-form input::placeholder { color: #94a3b8 !important; }
 .leaflet-control-geocoder-alternatives {
+    background: #ffffff !important;
+    border-top: 1px solid rgba(0,0,0,0.08) !important;
+}
+.leaflet-control-geocoder-alternatives li:hover { background: rgba(0,0,0,0.05) !important; }
+.leaflet-control-geocoder-alternatives a { color: #1e293b !important; }
+
+/* Geocoder 暗色主題（僅雷達主地圖暗色時） */
+#radar-map.map-theme-dark .leaflet-control-geocoder {
+    background: #1e293b !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+}
+#radar-map.map-theme-dark .leaflet-control-geocoder-form input {
+    color: #f1f5f9 !important;
+}
+#radar-map.map-theme-dark .leaflet-control-geocoder-form input::placeholder { color: #64748b !important; }
+#radar-map.map-theme-dark .leaflet-control-geocoder-alternatives {
     background: #1e293b !important;
     border-top: 1px solid rgba(255,255,255,0.08) !important;
 }
-.leaflet-control-geocoder-alternatives li:hover { background: rgba(255,255,255,0.06) !important; }
-.leaflet-control-geocoder-alternatives a { color: #e2e8f0 !important; }
+#radar-map.map-theme-dark .leaflet-control-geocoder-alternatives li:hover { background: rgba(255,255,255,0.06) !important; }
+#radar-map.map-theme-dark .leaflet-control-geocoder-alternatives a { color: #e2e8f0 !important; }
 
 /* 縮放按鈕移到右上，避開頂部 header（~72px） */
 .leaflet-top.leaflet-right .leaflet-control-zoom {
-    margin-top: 72px;
-    margin-right: 12px;
+    margin-top: 108px;
+    margin-right: 20px;
 }
 
 /* 小螢幕額外加大點擊區 */
@@ -84,3 +107,51 @@ path.radar-scan-circle {
 .radar-ticker {
     transition: opacity 0.4s ease;
 }
+
+/* ── 暗色地圖：縮放 / 圖層控制元件 ──────────────────────────── */
+#radar-map.map-theme-dark .leaflet-control-zoom a {
+    background: #1e293b !important;
+    color: #e2e8f0 !important;
+    border-bottom-color: rgba(255,255,255,0.12) !important;
+}
+#radar-map.map-theme-dark .leaflet-control-zoom a:hover {
+    background: #334155 !important;
+}
+#radar-map.map-theme-dark .leaflet-control-layers {
+    background: #1e293b !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    color: #e2e8f0 !important;
+}
+#radar-map.map-theme-dark .leaflet-control-layers label {
+    color: #e2e8f0 !important;
+}
+
+/* ── 主題切換按鈕（左上角，避開 header + geocoder）──────────── */
+/* button 本身即 .leaflet-control，直接設定 margin */
+button.leaflet-theme-toggle.leaflet-control {
+    margin-top: 64px !important;
+    margin-left: 18px !important;
+}
+.leaflet-theme-toggle {
+    display: block;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    background: #ffffff;
+    color: #1e293b;
+    border: 1px solid rgba(0,0,0,0.2);
+    border-radius: 6px;
+    white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+    line-height: 1.4;
+    position: relative;
+    z-index: 1000;
+    pointer-events: auto;
+}
+#radar-map.map-theme-dark .leaflet-theme-toggle {
+    background: #1e293b;
+    color: #e2e8f0;
+    border-color: rgba(255,255,255,0.15);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+.leaflet-theme-toggle:hover { opacity: 0.85; }
