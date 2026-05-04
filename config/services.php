@@ -48,6 +48,12 @@ return [
         'liff_id' => env('LIFF_ID'),
     ],
 
+    'gmail' => [
+        'client_id'     => env('GMAIL_CLIENT_ID'),
+        'client_secret' => env('GMAIL_CLIENT_SECRET'),
+        'from_email'    => env('GMAIL_FROM_EMAIL'),
+    ],
+
     'claude' => [
         'api_key' => env('CLAUDE_API_KEY'),
         'model'   => 'claude-haiku-4-5-20251001',
