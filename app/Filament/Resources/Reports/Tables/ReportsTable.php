@@ -3,15 +3,19 @@
 namespace App\Filament\Resources\Reports\Tables;
 
 use App\Models\Report;
+use App\Models\User;
 use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\Textarea;
 use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 
 class ReportsTable
@@ -145,6 +149,35 @@ class ReportsTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    BulkAction::make('ban_users')
+                        ->label('批次封鎖使用者')
+                        ->icon('heroicon-o-no-symbol')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->modalHeading('批次封鎖使用者')
+                        ->modalDescription('將封鎖所選回報的使用者帳號（訪客回報將略過）。')
+                        ->form([
+                            Textarea::make('ban_reason')
+                                ->label('封禁原因')
+                                ->required()
+                                ->rows(2)
+                                ->placeholder('例：亂傳照片、留言騷擾…'),
+                        ])
+                        ->action(function (Collection $records, array $data): void {
+                            $userIds = $records
+                                ->pluck('user_id')
+                                ->filter()
+                                ->unique()
+                                ->values();
+
+                            if ($userIds->isNotEmpty()) {
+                                User::whereIn('id', $userIds)->update([
+                                    'is_banned'  => true,
+                                    'ban_reason' => $data['ban_reason'],
+                                ]);
+                            }
+                        })
+                        ->deselectRecordsAfterCompletion(),
                     DeleteBulkAction::make(),
                 ]),
             ])

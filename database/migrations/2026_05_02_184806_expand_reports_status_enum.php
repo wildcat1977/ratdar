@@ -11,9 +11,12 @@ return new class extends Migration
     public function up(): void
     {
         // PostgreSQL 以 CHECK constraint 實作 enum，需手動重建以加入新值
-        DB::statement('ALTER TABLE reports DROP CONSTRAINT IF EXISTS reports_status_check');
-        DB::statement('ALTER TABLE reports ALTER COLUMN status TYPE VARCHAR(20)');
-        DB::statement("ALTER TABLE reports ADD CONSTRAINT reports_status_check CHECK (status IN ('pending','approved','rejected','reported_1999','resolved'))");
+        // SQLite 不支援 ALTER COLUMN，因此僅在 PostgreSQL 執行
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement('ALTER TABLE reports DROP CONSTRAINT IF EXISTS reports_status_check');
+            DB::statement('ALTER TABLE reports ALTER COLUMN status TYPE VARCHAR(20)');
+            DB::statement("ALTER TABLE reports ADD CONSTRAINT reports_status_check CHECK (status IN ('pending','approved','rejected','reported_1999','resolved'))");
+        }
     }
 
     /**
@@ -21,8 +24,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        DB::statement("UPDATE reports SET status = 'approved' WHERE status IN ('reported_1999','resolved')");
-        DB::statement('ALTER TABLE reports DROP CONSTRAINT IF EXISTS reports_status_check');
-        DB::statement("ALTER TABLE reports ADD CONSTRAINT reports_status_check CHECK (status IN ('pending','approved','rejected'))");
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement("UPDATE reports SET status = 'approved' WHERE status IN ('reported_1999','resolved')");
+            DB::statement('ALTER TABLE reports DROP CONSTRAINT IF EXISTS reports_status_check');
+            DB::statement("ALTER TABLE reports ADD CONSTRAINT reports_status_check CHECK (status IN ('pending','approved','rejected'))");
+        }
     }
 };
