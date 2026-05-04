@@ -62,11 +62,23 @@ class ReportsTable
 
                 TextColumn::make('latitude')
                     ->label('緯度')
-                    ->numeric(7),
+                    ->numeric(7)
+                    ->description(fn (Report $record): ?string =>
+                        ((float) $record->latitude === Report::DEFAULT_LATITUDE &&
+                         (float) $record->longitude === Report::DEFAULT_LONGITUDE)
+                            ? '⚠️ 未提供位置授權'
+                            : null
+                    ),
 
                 TextColumn::make('longitude')
                     ->label('經度')
-                    ->numeric(7),
+                    ->numeric(7)
+                    ->description(fn (Report $record): ?string =>
+                        ((float) $record->latitude === Report::DEFAULT_LATITUDE &&
+                         (float) $record->longitude === Report::DEFAULT_LONGITUDE)
+                            ? '⚠️ 未提供位置授權'
+                            : null
+                    ),
 
                 BadgeColumn::make('status')
                     ->label('狀態')
