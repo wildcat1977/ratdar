@@ -17,9 +17,9 @@ class ListContacts extends ListRecords
         return [
             'all'     => Tab::make('全部'),
             'unread'  => Tab::make('未讀')
-                ->modifyQueryUsing(fn (Builder $q) => $q->where('status', Contact::STATUS_UNREAD)),
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('status', Contact::STATUS_UNREAD)),
             'replied' => Tab::make('已回覆')
-                ->modifyQueryUsing(fn (Builder $q) => $q->where('status', Contact::STATUS_REPLIED)),
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('status', Contact::STATUS_REPLIED)),
         ];
     }
 }
