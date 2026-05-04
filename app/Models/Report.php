@@ -22,6 +22,10 @@ class Report extends Model
     public const TYPE_RAT    = 'rat';     // 發現鼠蹤
     public const TYPE_POISON = 'poison';  // 發現毒餌 / 老鼠藥
 
+    /** 預設座標（未提供位置授權時使用） */
+    public const DEFAULT_LATITUDE  = 25.0330000;
+    public const DEFAULT_LONGITUDE = 121.5654000;
+
     public const TYPES = [
         self::TYPE_RAT,
         self::TYPE_POISON,
