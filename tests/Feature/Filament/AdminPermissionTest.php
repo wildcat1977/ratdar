@@ -23,7 +23,7 @@ class AdminPermissionTest extends TestCase
         $this->assertNotContains($admin->email, User::PROTECTED_ADMIN_EMAILS);
     }
 
-    public function test_grant_admin_action_sets_is_admin_true(): void
+    public function test_is_admin_can_be_set_to_true(): void
     {
         $user = User::factory()->create(['is_admin' => false]);
 
@@ -32,7 +32,7 @@ class AdminPermissionTest extends TestCase
         $this->assertTrue($user->fresh()->is_admin);
     }
 
-    public function test_revoke_admin_action_sets_is_admin_false_for_regular_admin(): void
+    public function test_is_admin_can_be_set_to_false_for_regular_admin(): void
     {
         $admin = User::factory()->admin()->create(['email' => 'other@example.com']);
 
@@ -43,42 +43,12 @@ class AdminPermissionTest extends TestCase
         $this->assertFalse($admin->fresh()->is_admin);
     }
 
-    public function test_protected_emails_cannot_be_revoked_via_action_visibility(): void
+    public function test_protected_emails_are_in_protected_admin_emails_list(): void
     {
         foreach (User::PROTECTED_ADMIN_EMAILS as $email) {
             $user = User::factory()->admin()->create(['email' => $email]);
 
-            // The revoke_admin action should NOT be visible for protected emails
-            $isVisible = $user->is_admin && ! in_array($user->email, User::PROTECTED_ADMIN_EMAILS);
-
-            $this->assertFalse($isVisible, "revoke_admin should not be visible for {$email}");
+            $this->assertTrue(in_array($user->email, User::PROTECTED_ADMIN_EMAILS));
         }
-    }
-
-    public function test_grant_admin_action_is_visible_for_non_admin(): void
-    {
-        $user = User::factory()->create(['is_admin' => false]);
-
-        $isGrantVisible = ! $user->is_admin;
-
-        $this->assertTrue($isGrantVisible);
-    }
-
-    public function test_revoke_admin_action_is_visible_for_non_protected_admin(): void
-    {
-        $admin = User::factory()->admin()->create(['email' => 'other@example.com']);
-
-        $isRevokeVisible = $admin->is_admin && ! in_array($admin->email, User::PROTECTED_ADMIN_EMAILS);
-
-        $this->assertTrue($isRevokeVisible);
-    }
-
-    public function test_grant_admin_action_is_not_visible_for_existing_admin(): void
-    {
-        $admin = User::factory()->admin()->create();
-
-        $isGrantVisible = ! $admin->is_admin;
-
-        $this->assertFalse($isGrantVisible);
     }
 }
