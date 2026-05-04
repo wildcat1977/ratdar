@@ -40,6 +40,7 @@
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script>
         window.__LIFF_ID__ = @js(config('services.line.liff_id'));
+        window.__AUTHED__  = @js(auth()->check());
     </script>
     @endif
 </head>

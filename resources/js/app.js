@@ -495,12 +495,22 @@ async function initLiff() {
     const liffId = window.__LIFF_ID__;
     if (!liffId || typeof liff === 'undefined') return;
 
+    // 已有 Laravel session → 不需要重新走 LIFF 登入流程
+    if (window.__AUTHED__) return;
+
     try {
         await liff.init({ liffId });
     } catch (_) { return; }
 
     // 只在 LINE 內建瀏覽器中自動觸發登入
-    if (!liff.isInClient()) return;
+    if (!liff.isInClient()) {
+        // 使用者在 LINE 內建瀏覽器直接輸入網址（非透過 liff.line.me）
+        // → 重導至 LIFF URL，讓 LINE 完成 LIFF 初始化後才回來
+        if (/Line\//i.test(navigator.userAgent)) {
+            window.location.replace('https://liff.line.me/' + liffId);
+        }
+        return;
+    }
     if (!liff.isLoggedIn()) {
         liff.login({ redirectUri: window.location.href });
         return;
