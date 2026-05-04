@@ -70,22 +70,8 @@ class ReportsTable
 
                 TextColumn::make('description')
                     ->label('描述')
-                    ->limit(40)
+                    ->wrap()
                     ->default('—'),
-
-                TextColumn::make('address')
-                    ->label('位置')
-                    ->formatStateUsing(fn ($state, Report $record): string => $state
-                        ?: ($record->latitude !== null && $record->longitude !== null
-                            ? $record->latitude . ', ' . $record->longitude
-                            : '—'))
-                    ->description(fn (Report $record): ?string =>
-                        ((float) $record->latitude === Report::DEFAULT_LATITUDE &&
-                         (float) $record->longitude === Report::DEFAULT_LONGITUDE)
-                            ? '⚠️ 未提供位置授權'
-                            : null
-                    )
-                    ->toggleable(isToggledHiddenByDefault: true),
 
                 BadgeColumn::make('status')
                     ->label('狀態')
