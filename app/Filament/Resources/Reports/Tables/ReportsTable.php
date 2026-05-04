@@ -33,10 +33,14 @@ class ReportsTable
                     ->label('回報者')
                     ->default('訪客')
                     ->searchable()
-                    ->description(fn (Report $record): string => $record->address
-                        ?: ($record->latitude !== null && $record->longitude !== null
-                            ? $record->latitude . ', ' . $record->longitude
-                            : '—'))
+                    ->description(fn (Report $record): string =>
+                        ((float) $record->latitude === Report::DEFAULT_LATITUDE &&
+                         (float) $record->longitude === Report::DEFAULT_LONGITUDE)
+                            ? '⚠️ 未提供位置授權'
+                            : ($record->address
+                                ?: ($record->latitude !== null && $record->longitude !== null
+                                    ? $record->latitude . ', ' . $record->longitude
+                                    : '—')))
                     ->url(fn (Report $record): ?string => $record->user_id
                         ? UserResource::getUrl('edit', ['record' => $record->user_id])
                         : null)
