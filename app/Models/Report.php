@@ -2,12 +2,16 @@
 
 namespace App\Models;
 
+use Database\Factories\ReportFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Cache;
 
 class Report extends Model
 {
+    /** @use HasFactory<ReportFactory> */
+    use HasFactory;
     public const STATUS_PENDING       = 'pending';
     public const STATUS_APPROVED      = 'approved';
     public const STATUS_REJECTED      = 'rejected';
