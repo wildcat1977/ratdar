@@ -70,7 +70,10 @@ app/
 │   ├── Report.php                   # visible scope / 狀態常數
 │   └── User.php
 ├── Services/
+│   ├── GmailMailer.php              # Gmail API OAuth2 郵件發送（聯絡回覆用）
 │   └── ImageModerationService.php   # Claude Haiku Vision API 圖片審核
+├── Http/Controllers/
+│   └── GmailAuthController.php      # Gmail OAuth2 一次性授權 callback
 └── Providers/AppServiceProvider     # 註冊 LINE Socialite Provider
 
 resources/
@@ -127,6 +130,9 @@ php artisan reports:backfill-addresses --force
 | `LINE_CLIENT_SECRET`  | LINE Login Channel Secret                     |      |
 | `LINE_REDIRECT_URI`   | LINE callback URL                             |      |
 | `LIFF_ID`             | LINE LIFF App ID（in-app 瀏覽器自動登入用）   |      |
+| `GMAIL_CLIENT_ID`     | Gmail API OAuth2 Client ID                    |      |
+| `GMAIL_CLIENT_SECRET` | Gmail API OAuth2 Secret                       |      |
+| `GMAIL_FROM_EMAIL`    | 寄件者 Gmail 地址                             |      |
 | `CLAUDE_API_KEY`      | Anthropic API Key（未填時照片直接通過審核）   |      |
 | `RADAR_AUTO_APPROVE`  | `true` 可讓通報跳過人工審核直接上架           |      |
 

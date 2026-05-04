@@ -52,7 +52,7 @@
 | subject      | string(200)       | 主旨                                          |
 | message      | text              | 訊息內容                                      |
 | status       | string(20)        | `unread` / `read` / `replied`，預設 `unread`  |
-| reply        | text null         | 管理員回覆（備忘，目前不自動寄信）            |
+| reply        | text null         | 管理員回覆內容（填寫後可從後台一鍵寄出 Gmail）|
 | replied_at   | timestamp null    | 管理員標記已回覆時間                          |
 | timestamps   |                   |                                               |
 
