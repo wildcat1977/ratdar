@@ -33,7 +33,6 @@ class EditUser extends EditRecord
                     ->danger()
                     ->send();
                 $this->halt();
-                return;
             }
 
             // An explicit confirmation checkbox must be checked before any admin change
@@ -50,7 +49,8 @@ class EditUser extends EditRecord
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        // Remove the confirmation toggle value – it has no database column
+        // Strip the virtual confirmation field – it must remain dehydrated so
+        // beforeSave() can read it, but it has no corresponding database column.
         unset($data['is_admin_confirm']);
         return $data;
     }
