@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Users\Tables;
 
+use App\Support\MaskHelper;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -25,12 +26,14 @@ class UsersTable
                 TextColumn::make('name')
                     ->label('名稱')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->formatStateUsing(fn (?string $state) => MaskHelper::maskName($state)),
 
                 TextColumn::make('email')
                     ->label('Email')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->formatStateUsing(fn (?string $state) => MaskHelper::maskEmail($state)),
 
                 TextColumn::make('provider')
                     ->label('登入方式')
