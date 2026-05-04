@@ -57,32 +57,26 @@ class UsersTableMaskTest extends TestCase
         $this->assertStringContainsString('@', $result);
     }
 
-    public function test_email_tld_preserved(): void
+    public function test_email_domain_fully_preserved(): void
     {
         $result = MaskHelper::maskEmail('john@example.com');
-        $this->assertStringEndsWith('.com', $result);
-    }
-
-    public function test_email_domain_first_char_visible(): void
-    {
-        $result = MaskHelper::maskEmail('john@example.com');
-        [, $maskedDomain] = explode('@', $result, 2);
-        $this->assertStringStartsWith('e', $maskedDomain);
+        [, $domain] = explode('@', $result, 2);
+        $this->assertSame('example.com', $domain);
     }
 
     public function test_email_typical_address_masked(): void
     {
-        $this->assertSame('u******@g****.com', MaskHelper::maskEmail('user123@gmail.com'));
+        $this->assertSame('u******@gmail.com', MaskHelper::maskEmail('user123@gmail.com'));
     }
 
     public function test_email_short_local_part_padded(): void
     {
-        // "a@b.com" → local "a" gets at least 2 asterisks, domain "b" gets at least 2 asterisks
-        $this->assertSame('a**@b**.com', MaskHelper::maskEmail('a@b.com'));
+        // "a@b.com" → local "a" gets at least 2 asterisks, domain kept intact
+        $this->assertSame('a**@b.com', MaskHelper::maskEmail('a@b.com'));
     }
 
-    public function test_email_domain_without_dot_is_masked(): void
+    public function test_email_domain_without_dot_is_preserved(): void
     {
-        $this->assertSame('u***@l********', MaskHelper::maskEmail('user@localhost'));
+        $this->assertSame('u***@localhost', MaskHelper::maskEmail('user@localhost'));
     }
 }

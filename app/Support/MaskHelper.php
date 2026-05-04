@@ -22,11 +22,11 @@ class MaskHelper
 
     /**
      * Mask an email address, keeping only the first character of the local
-     * part and the TLD visible.  A minimum of two asterisks is used in each
-     * masked segment.
+     * part visible and leaving the full domain intact.
+     * A minimum of two asterisks is appended to the masked local part.
      *
-     * Examples: "user123@gmail.com" → "u******@g****.com"
-     *           "a@b.com"           → "a**@b**.com"
+     * Examples: "user123@gmail.com" → "u******@gmail.com"
+     *           "a@b.com"           → "a**@b.com"
      */
     public static function maskEmail(?string $email): ?string
     {
@@ -38,15 +38,6 @@ class MaskHelper
 
         $maskedLocal = mb_substr($local, 0, 1) . str_repeat('*', max(mb_strlen($local) - 1, 2));
 
-        $dotPos = mb_strrpos($domain, '.');
-        if ($dotPos !== false) {
-            $domainName   = mb_substr($domain, 0, $dotPos);
-            $tld          = mb_substr($domain, $dotPos);
-            $maskedDomain = mb_substr($domainName, 0, 1) . str_repeat('*', max(mb_strlen($domainName) - 1, 2)) . $tld;
-        } else {
-            $maskedDomain = mb_substr($domain, 0, 1) . str_repeat('*', max(mb_strlen($domain) - 1, 2));
-        }
-
-        return $maskedLocal . '@' . $maskedDomain;
+        return $maskedLocal . '@' . $domain;
     }
 }
