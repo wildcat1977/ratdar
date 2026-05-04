@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\SocialiteController;
+use App\Http\Controllers\GmailAuthController;
 use App\Http\Controllers\ShareController;
 use App\Models\Report;
 use Illuminate\Support\Facades\Route;
@@ -63,6 +64,12 @@ Route::get('/reports/export', function () {
 
 Route::middleware('auth')->group(function () {
     Route::view('/profile', 'pages.profile')->name('profile');
+
+    // Gmail OAuth2 授權（管理員用）
+    Route::get('/admin/gmail/authorize', [GmailAuthController::class, 'authorize'])
+        ->name('admin.gmail.authorize');
+    Route::get('/admin/gmail/callback', [GmailAuthController::class, 'callback'])
+        ->name('admin.gmail.callback');
 });
 
 Route::view('/leaderboard', 'pages.leaderboard')->name('leaderboard');
