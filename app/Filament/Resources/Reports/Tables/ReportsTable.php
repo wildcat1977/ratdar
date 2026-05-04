@@ -33,6 +33,14 @@ class ReportsTable
                     ->label('回報者')
                     ->default('訪客')
                     ->searchable()
+                    ->description(fn (Report $record): string =>
+                        ((float) $record->latitude === Report::DEFAULT_LATITUDE &&
+                         (float) $record->longitude === Report::DEFAULT_LONGITUDE)
+                            ? '⚠️ 未提供位置授權'
+                            : ($record->address
+                                ?: ($record->latitude !== null && $record->longitude !== null
+                                    ? $record->latitude . ', ' . $record->longitude
+                                    : '—')))
                     ->url(fn (Report $record): ?string => $record->user_id
                         ? UserResource::getUrl('edit', ['record' => $record->user_id])
                         : null)
@@ -65,25 +73,19 @@ class ReportsTable
                     ->limit(40)
                     ->default('—'),
 
-                TextColumn::make('latitude')
-                    ->label('緯度')
-                    ->numeric(7)
+                TextColumn::make('address')
+                    ->label('位置')
+                    ->formatStateUsing(fn ($state, Report $record): string => $state
+                        ?: ($record->latitude !== null && $record->longitude !== null
+                            ? $record->latitude . ', ' . $record->longitude
+                            : '—'))
                     ->description(fn (Report $record): ?string =>
                         ((float) $record->latitude === Report::DEFAULT_LATITUDE &&
                          (float) $record->longitude === Report::DEFAULT_LONGITUDE)
                             ? '⚠️ 未提供位置授權'
                             : null
-                    ),
-
-                TextColumn::make('longitude')
-                    ->label('經度')
-                    ->numeric(7)
-                    ->description(fn (Report $record): ?string =>
-                        ((float) $record->latitude === Report::DEFAULT_LATITUDE &&
-                         (float) $record->longitude === Report::DEFAULT_LONGITUDE)
-                            ? '⚠️ 未提供位置授權'
-                            : null
-                    ),
+                    )
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 BadgeColumn::make('status')
                     ->label('狀態')
