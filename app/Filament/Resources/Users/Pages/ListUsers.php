@@ -24,9 +24,9 @@ class ListUsers extends ListRecords
         return [
             'all'     => Tab::make('全部'),
             'admin'   => Tab::make('管理員')
-                ->modifyQueryUsing(fn (Builder $q) => $q->where('is_admin', true)),
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('is_admin', true)),
             'blocked' => Tab::make('封禁')
-                ->modifyQueryUsing(fn (Builder $q) => $q->where('is_banned', true)),
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('is_banned', true)),
         ];
     }
 }
