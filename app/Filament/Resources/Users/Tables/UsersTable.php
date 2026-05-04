@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\Users\Tables;
 
-use App\Models\User;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -83,26 +82,6 @@ class UsersTable
                     ->falseLabel('僅正常帳號'),
             ])
             ->recordActions([
-                Action::make('grant_admin')
-                    ->label('授予管理員')
-                    ->icon('heroicon-o-shield-check')
-                    ->color('warning')
-                    ->visible(fn ($record) => ! $record->is_admin)
-                    ->requiresConfirmation()
-                    ->modalHeading('授予管理員權限')
-                    ->modalDescription(fn ($record) => "確定要授予「{$record->name}」管理員權限？授予後該帳號可登入後台並審核回報。")
-                    ->modalSubmitActionLabel('確認授予')
-                    ->action(fn ($record) => $record->update(['is_admin' => true])),
-                Action::make('revoke_admin')
-                    ->label('撤銷管理員')
-                    ->icon('heroicon-o-shield-exclamation')
-                    ->color('danger')
-                    ->visible(fn ($record) => $record->is_admin && ! in_array($record->email, User::PROTECTED_ADMIN_EMAILS))
-                    ->requiresConfirmation()
-                    ->modalHeading('撤銷管理員權限')
-                    ->modalDescription(fn ($record) => "確定要撤銷「{$record->name}」的管理員權限？撤銷後該帳號將無法登入後台。")
-                    ->modalSubmitActionLabel('確認撤銷')
-                    ->action(fn ($record) => $record->update(['is_admin' => false])),
                 Action::make('ban')
                     ->label('封禁')
                     ->icon('heroicon-o-no-symbol')
