@@ -20,6 +20,12 @@ class User extends Authenticatable implements FilamentUser
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    /** Emails whose admin rights are permanently protected and cannot be revoked. */
+    const PROTECTED_ADMIN_EMAILS = [
+        'wildcat.young@gmail.com',
+        'genehong@gmail.com',
+    ];
+
     /**
      * Get the attributes that should be cast.
      *

@@ -35,7 +35,18 @@ class UserForm
 
                 Toggle::make('is_admin')
                     ->label('管理員權限')
-                    ->helperText('開啟後可登入後台並審核回報'),
+                    ->helperText('開啟後可登入後台並審核回報')
+                    ->reactive()
+                    ->afterStateUpdated(fn ($set) => $set('is_admin_confirm', false)),
+
+                Toggle::make('is_admin_confirm')
+                    ->label('確認變更管理員權限')
+                    ->helperText('請勾選以確認此操作')
+                    ->visible(fn (string $operation, $get, $record) =>
+                        $operation === 'edit' &&
+                        $record !== null &&
+                        (bool) $get('is_admin') !== (bool) $record->is_admin
+                    ),
 
                 Toggle::make('is_banned')
                     ->label('封禁帳號')
