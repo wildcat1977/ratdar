@@ -161,6 +161,20 @@ class ReportsTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    BulkAction::make('approve_all')
+                        ->label('批次核准上架')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->modalHeading('批次核准上架')
+                        ->modalDescription('將所選的待審核通報全部核准並上架至地圖，非待審核狀態的通報將略過。')
+                        ->action(function (Collection $records): void {
+                            $records
+                                ->filter(fn (Report $record) => $record->status === Report::STATUS_PENDING)
+                                ->each(fn (Report $record) => $record->update(['status' => Report::STATUS_APPROVED]));
+                        })
+                        ->deselectRecordsAfterCompletion(),
+
                     BulkAction::make('ban_users')
                         ->label('批次封鎖使用者')
                         ->icon('heroicon-o-no-symbol')
