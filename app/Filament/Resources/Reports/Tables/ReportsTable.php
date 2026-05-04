@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Reports\Tables;
 
+use App\Filament\Resources\Users\UserResource;
 use App\Models\Report;
 use App\Models\User;
 use Filament\Actions\Action;
@@ -31,7 +32,11 @@ class ReportsTable
                 TextColumn::make('user.name')
                     ->label('回報者')
                     ->default('訪客')
-                    ->searchable(),
+                    ->searchable()
+                    ->url(fn (Report $record): ?string => $record->user_id
+                        ? UserResource::getUrl('edit', ['record' => $record->user_id])
+                        : null)
+                    ->openUrlInNewTab(),
 
                 BadgeColumn::make('type')
                     ->label('類型')
