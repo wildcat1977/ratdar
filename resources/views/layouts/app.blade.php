@@ -17,14 +17,7 @@
     <meta property="og:url" content="{{ url()->current() }}">
     <meta name="twitter:card" content="summary_large_image">
 
-    {{-- Google Analytics --}}
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-6Z80TY5CE0"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-6Z80TY5CE0');
-    </script>
+    @include('partials.gtag')
 
     {{-- Leaflet CSS --}}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
