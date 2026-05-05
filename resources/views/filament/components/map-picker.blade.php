@@ -10,14 +10,58 @@
 @php
     $lat = (float) ($record?->latitude  ?? 25.0330);
     $lng = (float) ($record?->longitude ?? 121.5654);
+
+    // 附近通報：僅在編輯現有記錄時抓取
+    $nearbyReports = [];
+    if ($record?->id) {
+        $delta = 0.003; // 約 300m
+        $nearbyReports = \App\Models\Report::where('id', '!=', $record->id)
+            ->whereBetween('latitude',  [$lat - $delta, $lat + $delta])
+            ->whereBetween('longitude', [$lng - $delta, $lng + $delta])
+            ->select('id', 'latitude', 'longitude', 'status', 'type', 'address', 'image_path', 'description', 'created_at')
+            ->latest()
+            ->limit(60)
+            ->get()
+            ->map(fn ($r) => [
+                'id'         => $r->id,
+                'lat'        => (float) $r->latitude,
+                'lng'        => (float) $r->longitude,
+                'status'     => $r->status,
+                'type'       => $r->type,
+                'address'    => $r->address ?? '',
+                'image_url'  => $r->image_path
+                    ? \Illuminate\Support\Facades\Storage::disk('public')->url($r->image_path)
+                    : null,
+                'desc'       => $r->description ? mb_substr($r->description, 0, 20) : '',
+                'created_at' => $r->created_at?->format('Y-m-d') ?? '',
+            ])
+            ->values()
+            ->toArray();
+    }
 @endphp
 
 <div
-    x-data="{
+    x-data="mapPickerInit_{{ $record?->id ?? 0 }}()"
+    class="mb-1"
+    wire:ignore
+>
+    <div x-ref="mapEl"
+         style="height: 280px; border-radius: 0.5rem; overflow: hidden; border: 1px solid rgba(156,163,175,0.3); z-index: 0;">
+    </div>
+    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+        拖曳圖釘調整正確位置，儲存後系統自動重建行政區地址。
+        @if(!empty($nearbyReports))
+            <span class="ml-2 text-amber-500">⚠ 附近 300m 內有 {{ count($nearbyReports) }} 筆相關通報（圓點標示）</span>
+        @endif
+    </p>
+</div>
+
+<script>
+function mapPickerInit_{{ $record?->id ?? 0 }}() {
+    return {
         map: null,
         marker: null,
         init() {
-            // Leaflet 可能因 defer 還沒載入，用輪詢等待
             const tryInit = () => {
                 if (typeof L === 'undefined') { setTimeout(tryInit, 100); return; }
 
@@ -40,17 +84,54 @@
                     $wire.set('data.latitude',  lat);
                     $wire.set('data.longitude', lng);
                 });
+
+                const nearby = @js($nearbyReports);
+                if (nearby.length > 0) {
+                    const statusColor = {
+                        pending:       '#f97316',
+                        approved:      '#ef4444',
+                        rejected:      '#6b7280',
+                        reported_1999: '#eab308',
+                        resolved:      '#22c55e',
+                    };
+                    const statusLabel = {
+                        pending:       '待審核',
+                        approved:      '已核准',
+                        rejected:      '已拒絕',
+                        reported_1999: '已通報1999',
+                        resolved:      '已處理',
+                    };
+                    const typeLabel = { rat: '🐀 鼠蹤', poison: '☠️ 毒餌' };
+
+                    nearby.forEach(r => {
+                        let html = '';
+                        if (r.image_url) {
+                            html += '<img src="' + r.image_url + '" style="width:120px;height:80px;object-fit:cover;border-radius:4px;display:block;margin-bottom:4px;">';
+                        }
+                        html += '<b>#' + r.id + ' ' + (typeLabel[r.type] || r.type) + '</b><br>';
+                        html += (statusLabel[r.status] || r.status) + '<br>';
+                        if (r.desc) {
+                            html += '<span style="color:#888">' + r.desc + (r.desc.length >= 20 ? '…' : '') + '</span><br>';
+                        }
+                        if (r.address) {
+                            html += '<span style="font-size:11px">' + r.address + '</span><br>';
+                        }
+                        html += '<small>' + r.created_at + '</small>';
+
+                        L.circleMarker([r.lat, r.lng], {
+                            radius:      8,
+                            fillColor:   statusColor[r.status] || '#6b7280',
+                            color:       '#fff',
+                            weight:      1.5,
+                            opacity:     1,
+                            fillOpacity: 0.85,
+                        }).addTo(this.map)
+                        .bindPopup(html, { maxWidth: 160 });
+                    });
+                }
             };
             tryInit();
         }
-    }"
-    class="mb-1"
-    wire:ignore
->
-    <div x-ref="mapEl"
-         style="height: 280px; border-radius: 0.5rem; overflow: hidden; border: 1px solid rgba(156,163,175,0.3); z-index: 0;">
-    </div>
-    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-        拖曳圖釘調整正確位置，儲存後系統自動重建行政區地址。
-    </p>
-</div>
+    };
+}
+</script>
