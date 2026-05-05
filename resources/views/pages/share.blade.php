@@ -29,6 +29,8 @@
 
     <meta name="theme-color" content="#0d1117">
 
+    @include('partials.gtag')
+
     @vite(['resources/css/app.css'])
 </head>
 <body class="min-h-dvh bg-[#0d1117] text-slate-100 antialiased flex flex-col items-center justify-center px-4 py-12">
