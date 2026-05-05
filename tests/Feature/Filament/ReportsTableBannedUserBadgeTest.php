@@ -21,30 +21,30 @@ class ReportsTableBannedUserBadgeTest extends TestCase
         $this->admin = User::factory()->admin()->create();
     }
 
-    public function test_reports_table_has_banned_badge_column(): void
+    public function test_reports_table_has_no_standalone_banned_badge_column(): void
     {
         Livewire::actingAs($this->admin)
             ->test(ListReports::class)
-            ->assertTableColumnExists('banned_badge');
+            ->assertTableColumnDoesNotExist('banned_badge');
     }
 
-    public function test_banned_user_report_shows_banned_badge_state(): void
+    public function test_banned_user_report_shows_banned_prefix_in_reporter_description(): void
     {
         $bannedUser = User::factory()->banned()->create();
-        $report = Report::factory()->create(['user_id' => $bannedUser->id]);
+        $report = Report::factory()->for($bannedUser)->create(['address' => '台北市中正區']);
 
         Livewire::actingAs($this->admin)
             ->test(ListReports::class)
-            ->assertTableColumnStateSet('banned_badge', '已封禁', record: $report);
+            ->assertTableColumnHasDescription('user.name', '⛔ 已封禁 台北市中正區', record: $report);
     }
 
-    public function test_non_banned_user_report_does_not_show_banned_badge(): void
+    public function test_non_banned_user_report_has_no_banned_prefix_in_reporter_description(): void
     {
         $user = User::factory()->create(['is_banned' => false]);
-        $report = Report::factory()->create(['user_id' => $user->id]);
+        $report = Report::factory()->for($user)->create(['address' => '台北市信義區']);
 
         Livewire::actingAs($this->admin)
             ->test(ListReports::class)
-            ->assertTableColumnStateSet('banned_badge', null, record: $report);
+            ->assertTableColumnHasDescription('user.name', '台北市信義區', record: $report);
     }
 }

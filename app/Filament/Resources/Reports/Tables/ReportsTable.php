@@ -11,7 +11,6 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Textarea;
-use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -29,40 +28,40 @@ class ReportsTable
                     ->label('ID')
                     ->sortable(),
 
-                TextColumn::make('banned_badge')
-                    ->label('')
-                    ->getStateUsing(fn (Report $record): ?string => $record->user?->is_banned ? '已封禁' : null)
-                    ->badge()
-                    ->color('danger'),
-
                 TextColumn::make('user.name')
                     ->label('回報者')
                     ->default('訪客')
                     ->searchable()
                     ->description(fn (Report $record): string =>
-                        ((float) $record->latitude === Report::DEFAULT_LATITUDE &&
-                         (float) $record->longitude === Report::DEFAULT_LONGITUDE)
-                            ? '⚠️ 未提供位置授權'
-                            : ($record->address
-                                ?: ($record->latitude !== null && $record->longitude !== null
-                                    ? $record->latitude . ', ' . $record->longitude
-                                    : '—')))
+                        implode(' ', array_filter([
+                            $record->user?->is_banned ? '⛔ 已封禁' : null,
+                            ((float) $record->latitude === Report::DEFAULT_LATITUDE &&
+                             (float) $record->longitude === Report::DEFAULT_LONGITUDE)
+                                ? '⚠️ 未提供位置授權'
+                                : ($record->address
+                                    ?: ($record->latitude !== null && $record->longitude !== null
+                                        ? $record->latitude . ', ' . $record->longitude
+                                        : '—')),
+                        ])))
                     ->url(fn (Report $record): ?string => $record->user_id
                         ? UserResource::getUrl('edit', ['record' => $record->user_id])
                         : null)
                     ->openUrlInNewTab(),
 
-                BadgeColumn::make('type')
+                TextColumn::make('type')
                     ->label('類型')
-                    ->colors([
-                        'danger'  => Report::TYPE_RAT,
-                        'primary' => Report::TYPE_POISON,
-                    ])
+                    ->badge()
+                    ->color(fn (string $state) => match ($state) {
+                        Report::TYPE_RAT    => 'danger',
+                        Report::TYPE_POISON => 'primary',
+                        default             => 'gray',
+                    })
                     ->formatStateUsing(fn (string $state) => match ($state) {
                         Report::TYPE_RAT    => '🐀 鼠蹤',
                         Report::TYPE_POISON => '☠️ 毒餌',
                         default => $state,
-                    }),
+                    })
+                    ->description(fn (Report $record): ?string => $record->description ?: null),
 
                 ImageColumn::make('image_path')
                     ->label('照片')
@@ -74,20 +73,9 @@ class ReportsTable
                         : null)
                     ->openUrlInNewTab(),
 
-                TextColumn::make('description')
-                    ->label('描述')
-                    ->wrap()
-                    ->default('—'),
-
-                BadgeColumn::make('status')
+                TextColumn::make('status')
                     ->label('狀態')
-                    ->colors([
-                        'warning' => Report::STATUS_PENDING,
-                        'success' => Report::STATUS_APPROVED,
-                        'danger'  => Report::STATUS_REJECTED,
-                        'warning' => Report::STATUS_REPORTED_1999,
-                        'success' => Report::STATUS_RESOLVED,
-                    ])
+                    ->badge()
                     ->color(fn (string $state) => match ($state) {
                         Report::STATUS_PENDING       => 'gray',
                         Report::STATUS_APPROVED      => 'danger',
@@ -103,12 +91,8 @@ class ReportsTable
                         Report::STATUS_REPORTED_1999 => '🟡 已通報 1999',
                         Report::STATUS_RESOLVED      => '🟢 已處理完畢',
                         default => $state,
-                    }),
-
-                TextColumn::make('created_at')
-                    ->label('回報時間')
-                    ->dateTime('Y-m-d H:i')
-                    ->sortable(),
+                    })
+                    ->description(fn (Report $record): string => $record->created_at->format('Y-m-d H:i')),
             ])
             ->filters([
                 SelectFilter::make('type')
