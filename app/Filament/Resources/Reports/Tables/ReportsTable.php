@@ -29,6 +29,13 @@ class ReportsTable
                     ->label('ID')
                     ->sortable(),
 
+                TextColumn::make('banned_badge')
+                    ->label('')
+                    ->getStateUsing(fn (Report $record): ?string => $record->user?->is_banned ? '已封禁' : null)
+                    ->badge()
+                    ->color('danger')
+                    ->placeholder(null),
+
                 TextColumn::make('user.name')
                     ->label('回報者')
                     ->default('訪客')
