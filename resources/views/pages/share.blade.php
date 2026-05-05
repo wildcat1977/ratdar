@@ -29,14 +29,7 @@
 
     <meta name="theme-color" content="#0d1117">
 
-    {{-- Google Analytics --}}
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-6Z80TY5CE0"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-6Z80TY5CE0');
-    </script>
+    @include('partials.gtag')
 
     @vite(['resources/css/app.css'])
 </head>
