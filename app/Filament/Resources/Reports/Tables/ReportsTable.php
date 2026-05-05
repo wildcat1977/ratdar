@@ -34,13 +34,16 @@ class ReportsTable
                     ->default('訪客')
                     ->searchable()
                     ->description(fn (Report $record): string =>
-                        ((float) $record->latitude === Report::DEFAULT_LATITUDE &&
-                         (float) $record->longitude === Report::DEFAULT_LONGITUDE)
-                            ? '⚠️ 未提供位置授權'
-                            : ($record->address
-                                ?: ($record->latitude !== null && $record->longitude !== null
-                                    ? $record->latitude . ', ' . $record->longitude
-                                    : '—')))
+                        implode(' ', array_filter([
+                            $record->user?->is_banned ? '⛔ 已封禁' : null,
+                            ((float) $record->latitude === Report::DEFAULT_LATITUDE &&
+                             (float) $record->longitude === Report::DEFAULT_LONGITUDE)
+                                ? '⚠️ 未提供位置授權'
+                                : ($record->address
+                                    ?: ($record->latitude !== null && $record->longitude !== null
+                                        ? $record->latitude . ', ' . $record->longitude
+                                        : '—')),
+                        ])))
                     ->url(fn (Report $record): ?string => $record->user_id
                         ? UserResource::getUrl('edit', ['record' => $record->user_id])
                         : null)
