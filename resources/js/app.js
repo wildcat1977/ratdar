@@ -97,6 +97,7 @@ let heatLayer = null;
 let markersLayer = null;
 let clusterLayer = null;
 let poisonLayer = null;        // 毒餌獨立圖層（不分群、永遠顯示）
+let ratLayerVisible = true;    // 「鼠蹤熱區」圖層控制開關（同步控制 clusterLayer）
 let currentTileLayer = null;   // 底圖圖層（隨主題切換）
 // 讀 localStorage，預設 light（亮色對大多數使用者更易閱讀）
 let currentTheme = (() => { try { return localStorage.getItem(MAP_THEME_KEY) || 'light'; } catch (_) { return 'light'; } })();
@@ -121,7 +122,7 @@ function initTicker() {
     }, 7000);
 }
 
-const MARKER_ZOOM_THRESHOLD = 13;  // 13 級以上才顯示獨立圖層，以下用 cluster
+const MARKER_ZOOM_THRESHOLD = 14;  // 14 級以上才顯示獨立圖層，以下用 cluster
 
 const MARKER_STYLES = {
     approved: {
@@ -239,6 +240,12 @@ function buildPoisonLayer(poisonData) {
 
 function updateMarkersVisibility(zoom) {
     if (!radarMap) return;
+    // 鼠蹤熱區已隱藏時，同時隱藏 cluster/數字層
+    if (!ratLayerVisible) {
+        if (clusterLayer && radarMap.hasLayer(clusterLayer)) radarMap.removeLayer(clusterLayer);
+        if (markersLayer && radarMap.hasLayer(markersLayer)) radarMap.removeLayer(markersLayer);
+        return;
+    }
     if (zoom >= MARKER_ZOOM_THRESHOLD) {
         // 移除舊的獨立圖層，改用 cluster
         if (markersLayer && radarMap.hasLayer(markersLayer)) radarMap.removeLayer(markersLayer);
@@ -324,6 +331,21 @@ function initRadar() {
         '☠️ 毒餌分佈': poisonLayer,
     };
     L.control.layers(null, overlayMaps, { position: 'topright', collapsed: false }).addTo(radarMap);
+
+    // 取消勾選「鼠蹤熱區」時同步隱藏數字 cluster；重新勾選時恢復
+    radarMap.on('overlayremove', (e) => {
+        if (e.layer === heatLayer) {
+            ratLayerVisible = false;
+            updateMarkersVisibility(radarMap.getZoom());
+        }
+    });
+    radarMap.on('overlayadd', (e) => {
+        if (e.layer === heatLayer) {
+            ratLayerVisible = true;
+            updateMarkersVisibility(radarMap.getZoom());
+        }
+    });
+
     new ThemeToggleControl().addTo(radarMap);
 
     // 地標搜尋（訪客可用，右上縮合圖示，展開後搜尋）
@@ -393,6 +415,7 @@ function updateNearbyCount(points, lat, lng, radiusKm) {
 window.initPinMap = function (el, wire) {
     const DEFAULT_LAT = 25.033;
     const DEFAULT_LNG = 121.5654;
+    let skipNextMoveEnd = false;
 
     const map = L.map(el, { zoomControl: true, attributionControl: false })
         .setView([DEFAULT_LAT, DEFAULT_LNG], 17);
@@ -443,19 +466,13 @@ window.initPinMap = function (el, wire) {
     });
     new LocateControl().addTo(map);
 
-    const marker = L.marker([DEFAULT_LAT, DEFAULT_LNG], { draggable: true }).addTo(map);
+    // 中心固定圖釘（取代可拖曳 marker）— 地圖中心即回報座標
+    const pinEl = document.createElement('div');
+    pinEl.style.cssText = 'position:absolute;left:50%;top:50%;transform:translate(-50%,-100%);pointer-events:none;z-index:800;font-size:28px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));';
+    pinEl.textContent = '📍';
+    el.appendChild(pinEl);
 
-    marker.on('dragend', () => {
-        const ll = marker.getLatLng();
-        wire.setLocation(ll.lat, ll.lng);
-    });
-
-    const setPos = (lat, lng) => {
-        map.setView([lat, lng], 18);
-        marker.setLatLng([lat, lng]);
-        wire.setLocation(lat, lng);
-
-        // Reverse geocode：取得縣市/區地址並傳給 Livewire
+    const reverseGeocode = (lat, lng) => {
         fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=zh-TW`)
             .then(r => r.json())
             .then(data => {
@@ -466,6 +483,21 @@ window.initPinMap = function (el, wire) {
                 wire.setAddress(parts.join(' '));
             })
             .catch(() => {});
+    };
+
+    // 地圖移動結束 → 以中心點更新回報座標（拖曳地圖 = 調整位置）
+    map.on('moveend', () => {
+        if (skipNextMoveEnd) { skipNextMoveEnd = false; return; }
+        const { lat, lng } = map.getCenter();
+        wire.setLocation(lat, lng);
+        reverseGeocode(lat, lng);
+    });
+
+    const setPos = (lat, lng) => {
+        skipNextMoveEnd = true;
+        map.setView([lat, lng], 18);
+        wire.setLocation(lat, lng);
+        reverseGeocode(lat, lng);
     };
 
     // 接收 EXIF 解析成功後的位置事件
