@@ -548,13 +548,16 @@ async function initLiff() {
         return;
     }
 
-    // 已登入：把 LINE access token 帶到後端換 Laravel session
-    const token = liff.getAccessToken();
-    const params = new URLSearchParams(window.location.search);
+    // 已登入：把 LINE access token（及 id_token）帶到後端換 Laravel session
+    const token   = liff.getAccessToken();
+    const idToken = liff.getIDToken(); // 需要 openid scope 才有值，否則為 null
+    const params  = new URLSearchParams(window.location.search);
     // 僅在尚未登入 Laravel 時才導向（避免無窮迴圈）
     if (!params.has('liff_authed')) {
-        window.location.href = '/auth/line/liff-callback?access_token=' + encodeURIComponent(token)
-            + '&redirect=' + encodeURIComponent(window.location.pathname);
+        let callbackUrl = '/auth/line/liff-callback?access_token=' + encodeURIComponent(token);
+        if (idToken) callbackUrl += '&id_token=' + encodeURIComponent(idToken);
+        callbackUrl += '&redirect=' + encodeURIComponent(window.location.pathname);
+        window.location.href = callbackUrl;
     }
 }
 
