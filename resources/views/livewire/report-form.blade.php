@@ -223,6 +223,34 @@ new class extends Component
                                 <p class="mt-2 rounded-md bg-purple-500/10 px-3 py-2 text-[11px] leading-relaxed text-purple-200/80">
                                     回報被隨意放置於盆栽、花圃、騎樓的老鼠藥/毒餌，提醒寵物飼主避開該區域與野生動物保育者關注。
                                 </p>
+                                {{-- 毒餌辨識圖 + 說明文連結 --}}
+                                <div x-data="{ lightbox: false }" class="mt-2 flex items-center gap-3">
+                                    <button type="button" @click="lightbox = true" class="shrink-0 focus:outline-none">
+                                        <img src="https://ratdar.taipei/rat-poison-demo.png"
+                                             alt="常見鼠藥外觀辨識"
+                                             class="h-16 w-16 rounded-lg object-cover ring-1 ring-purple-400/40 hover:ring-purple-400/80 transition">
+                                    </button>
+                                    <div class="text-[11px] text-purple-200/70 leading-relaxed">
+                                        <span class="font-medium text-purple-300">常見鼠藥外觀(點圖可放大)</span><br>
+                                        <a href="https://www.threads.com/@urmomovet/post/DX38LeFih8m"
+                                           target="_blank" rel="noopener noreferrer"
+                                           class="underline underline-offset-2 hover:text-purple-200">
+                                            → 閱讀完整辨識說明文章
+                                        </a>
+                                    </div>
+                                    {{-- Lightbox --}}
+                                    <div x-show="lightbox" x-cloak
+                                         @click="lightbox = false"
+                                         @keydown.escape.window="lightbox = false"
+                                         class="fixed inset-0 z-[2000] flex items-center justify-center bg-black/85 backdrop-blur-sm p-4">
+                                        <img src="https://ratdar.taipei/rat-poison-demo.png"
+                                             alt="常見鼠藥外觀辨識"
+                                             class="max-h-[80vh] max-w-full rounded-xl shadow-2xl"
+                                             @click.stop>
+                                        <button type="button" @click="lightbox = false"
+                                                class="absolute top-4 right-4 text-white/60 hover:text-white text-2xl leading-none">✕</button>
+                                    </div>
+                                </div>
                             @endif
                         </div>
                         <div x-data="{ preview: null, setPreview(files) { const f = files?.[0]; if (!f) return; const old = this.preview; this.preview = URL.createObjectURL(f); if (old) URL.revokeObjectURL(old); } }">
@@ -242,16 +270,16 @@ new class extends Component
                         </div>
 
                         <div>
-                            <label class="block text-xs font-medium text-slate-400">📍 發現位置</label>
+                            <label class="block text-xs font-medium text-slate-400">📍 發現位置 <span class="text-slate-600">（移動地圖即可調整）</span></label>
                             <div wire:ignore
                                  x-data
                                  x-init="initPinMap($el, $wire)"
                                  class="mt-2 h-48 w-full overflow-hidden rounded-lg border border-white/10 bg-black/40"></div>
                             <p class="mt-1 text-[11px] text-slate-500">
                                 @if ($exifLocation && $latitude && $longitude)
-                                    📷 從照片 EXIF 取得：{{ number_format($latitude, 5) }}, {{ number_format($longitude, 5) }}
+                                    📷 從照片 EXIF 取得：{{ number_format($latitude, 5) }}, {{ number_format($longitude, 5) }}（可移動地圖微調）
                                 @elseif ($latitude && $longitude)
-                                    已鎖定：{{ number_format($latitude, 5) }}, {{ number_format($longitude, 5) }}
+                                    已鎖定：{{ number_format($latitude, 5) }}, {{ number_format($longitude, 5) }}（可移動地圖調整）
                                 @else
                                     正在抓取定位…
                                 @endif
