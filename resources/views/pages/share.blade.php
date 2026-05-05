@@ -29,6 +29,15 @@
 
     <meta name="theme-color" content="#0d1117">
 
+    {{-- Google Analytics --}}
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-6Z80TY5CE0"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-6Z80TY5CE0');
+    </script>
+
     @vite(['resources/css/app.css'])
 </head>
 <body class="min-h-dvh bg-[#0d1117] text-slate-100 antialiased flex flex-col items-center justify-center px-4 py-12">
