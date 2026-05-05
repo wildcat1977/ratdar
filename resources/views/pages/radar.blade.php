@@ -41,10 +41,18 @@
 
         {{-- 底部：立即回報 + Footer --}}
         <div class="pointer-events-auto flex flex-col gap-3 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            {{-- 管理員公告 --}}
+            <livewire:announcement-banner />
+
+            {{-- 我的通報審核結果（已登入才顯示）--}}
+            @auth
+            <livewire:my-report-status />
+            @endauth
+
             {{-- 跑馬燈廣播 --}}
             <div class="mx-auto w-full max-w-md overflow-hidden rounded-full bg-black/50 px-4 py-1.5 backdrop-blur">
                 <p id="radar-ticker-text"
-                   class="radar-ticker truncate text-center text-[11px] font-medium text-slate-400">
+                   class="radar-ticker truncate text-center text-[11px] font-medium text-slate-200">
                 </p>
             </div>
 
