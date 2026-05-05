@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Reports\Schemas;
 
 use App\Models\Report;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -52,6 +53,20 @@ class ReportForm
                         Report::STATUS_REJECTED      => '已拒絕',
                     ])
                     ->required(),
+
+                Select::make('rejection_reason')
+                    ->label('拒絕原因')
+                    ->options(Report::REJECTION_REASONS)
+                    ->nullable()
+                    ->native(false)
+                    ->placeholder('（未填）')
+                    ->helperText('僅在拒絕時填寫，使用者將看到此原因'),
+
+                DateTimePicker::make('reviewed_at')
+                    ->label('審核時間')
+                    ->disabled()
+                    ->dehydrated(false)
+                    ->displayFormat('Y-m-d H:i'),
 
                 FileUpload::make('image_path')
                     ->label('照片')
