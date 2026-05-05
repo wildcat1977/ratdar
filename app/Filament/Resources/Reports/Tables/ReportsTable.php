@@ -33,8 +33,7 @@ class ReportsTable
                     ->label('')
                     ->getStateUsing(fn (Report $record): ?string => $record->user?->is_banned ? '已封禁' : null)
                     ->badge()
-                    ->color('danger')
-                    ->placeholder(null),
+                    ->color('danger'),
 
                 TextColumn::make('user.name')
                     ->label('回報者')

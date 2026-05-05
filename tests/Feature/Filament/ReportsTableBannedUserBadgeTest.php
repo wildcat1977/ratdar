@@ -47,6 +47,4 @@ class ReportsTableBannedUserBadgeTest extends TestCase
             ->test(ListReports::class)
             ->assertTableColumnStateSet('banned_badge', null, record: $report);
     }
-
-
 }
