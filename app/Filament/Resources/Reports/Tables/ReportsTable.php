@@ -11,6 +11,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Textarea;
+use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -48,20 +49,17 @@ class ReportsTable
                         : null)
                     ->openUrlInNewTab(),
 
-                TextColumn::make('type')
+                BadgeColumn::make('type')
                     ->label('類型')
-                    ->badge()
-                    ->color(fn (string $state) => match ($state) {
-                        Report::TYPE_RAT    => 'danger',
-                        Report::TYPE_POISON => 'primary',
-                        default             => 'gray',
-                    })
+                    ->colors([
+                        'danger'  => Report::TYPE_RAT,
+                        'primary' => Report::TYPE_POISON,
+                    ])
                     ->formatStateUsing(fn (string $state) => match ($state) {
                         Report::TYPE_RAT    => '🐀 鼠蹤',
                         Report::TYPE_POISON => '☠️ 毒餌',
                         default => $state,
-                    })
-                    ->description(fn (Report $record): ?string => $record->description ?: null),
+                    }),
 
                 ImageColumn::make('image_path')
                     ->label('照片')
@@ -73,9 +71,20 @@ class ReportsTable
                         : null)
                     ->openUrlInNewTab(),
 
-                TextColumn::make('status')
+                TextColumn::make('description')
+                    ->label('描述')
+                    ->wrap()
+                    ->default('—'),
+
+                BadgeColumn::make('status')
                     ->label('狀態')
-                    ->badge()
+                    ->colors([
+                        'warning' => Report::STATUS_PENDING,
+                        'success' => Report::STATUS_APPROVED,
+                        'danger'  => Report::STATUS_REJECTED,
+                        'warning' => Report::STATUS_REPORTED_1999,
+                        'success' => Report::STATUS_RESOLVED,
+                    ])
                     ->color(fn (string $state) => match ($state) {
                         Report::STATUS_PENDING       => 'gray',
                         Report::STATUS_APPROVED      => 'danger',
@@ -91,8 +100,12 @@ class ReportsTable
                         Report::STATUS_REPORTED_1999 => '🟡 已通報 1999',
                         Report::STATUS_RESOLVED      => '🟢 已處理完畢',
                         default => $state,
-                    })
-                    ->description(fn (Report $record): string => $record->created_at->format('Y-m-d H:i')),
+                    }),
+
+                TextColumn::make('created_at')
+                    ->label('回報時間')
+                    ->dateTime('Y-m-d H:i')
+                    ->sortable(),
             ])
             ->filters([
                 SelectFilter::make('type')
