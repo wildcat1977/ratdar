@@ -31,6 +31,17 @@ class Report extends Model
         self::TYPE_POISON,
     ];
 
+    /** 拒絕原因列表（key 儲存於 DB，value 顯示用） */
+    public const REJECTION_REASONS = [
+        'duplicate'      => '重複通報（鄰近已有相同回報）',
+        'outdated'       => '資訊過時（時間過長）',
+        'invalid_image'  => '照片不符（無法驗證鼠蹤／毒餌）',
+        'wrong_location' => '位置異常（座標不合理）',
+        'insufficient'   => '資料過少無法驗證，煩請補充地點資訊或照片後再次回報',
+        'spam'           => '不實／惡意通報',
+        'other'          => '其他',
+    ];
+
     /** 地圖上可公開顯示的狀態（除 pending/rejected 以外皆顯示） */
     public const VISIBLE_STATUSES = [
         self::STATUS_APPROVED,
@@ -47,13 +58,16 @@ class Report extends Model
         'image_path',
         'description',
         'status',
+        'rejection_reason',
+        'reviewed_at',
     ];
 
     protected function casts(): array
     {
         return [
-            'latitude' => 'decimal:7',
-            'longitude' => 'decimal:7',
+            'latitude'    => 'decimal:7',
+            'longitude'   => 'decimal:7',
+            'reviewed_at' => 'datetime',
         ];
     }
 
@@ -64,6 +78,13 @@ class Report extends Model
 
     protected static function booted(): void
     {
+        // 狀態從 pending 改為其他時，自動記錄審核時間
+        static::updating(function (Report $report) {
+            if ($report->isDirty('status') && $report->status !== self::STATUS_PENDING) {
+                $report->reviewed_at = now();
+            }
+        });
+
         static::saved(function () {
             Cache::forget('report_list.all_coords');
             Cache::forget('report_list.district_stats');

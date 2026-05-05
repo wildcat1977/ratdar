@@ -10,8 +10,10 @@ use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Tables\Columns\BadgeColumn;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -74,6 +76,7 @@ class ReportsTable
                 TextColumn::make('description')
                     ->label('描述')
                     ->wrap()
+                    ->searchable()
                     ->default('—'),
 
                 BadgeColumn::make('status')
@@ -101,6 +104,14 @@ class ReportsTable
                         Report::STATUS_RESOLVED      => '🟢 已處理完畢',
                         default => $state,
                     }),
+
+                TextColumn::make('rejection_reason')
+                    ->label('拒絕原因')
+                    ->formatStateUsing(fn (?string $state) => $state
+                        ? (Report::REJECTION_REASONS[$state] ?? $state)
+                        : '—')
+                    ->default('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('created_at')
                     ->label('回報時間')
@@ -151,7 +162,18 @@ class ReportsTable
                     ->color('gray')
                     ->icon('heroicon-o-x-circle')
                     ->visible(fn (Report $record) => $record->status === Report::STATUS_PENDING)
-                    ->action(fn (Report $record) => $record->update(['status' => Report::STATUS_REJECTED])),
+                    ->form([
+                        Select::make('rejection_reason')
+                            ->label('拒絕原因')
+                            ->options(Report::REJECTION_REASONS)
+                            ->required()
+                            ->native(false)
+                            ->helperText('選擇原因方便其他審核人員了解標準'),
+                    ])
+                    ->action(fn (Report $record, array $data) => $record->update([
+                        'status'           => Report::STATUS_REJECTED,
+                        'rejection_reason' => $data['rejection_reason'],
+                    ])),
 
                 EditAction::make(),
             ])
