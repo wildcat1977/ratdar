@@ -15,7 +15,14 @@ class SocialiteController extends Controller
      */
     public function redirect(string $provider): RedirectResponse
     {
-        return Socialite::driver($provider)->redirect();
+        $driver = Socialite::driver($provider);
+
+        // LINE 且已開啟 email scope 時，要求 openid + email 權限
+        if ($provider === 'line' && config('services.line.email_scope')) {
+            $driver = $driver->scopes(['profile', 'openid', 'email']);
+        }
+
+        return $driver->redirect();
     }
 
     /**
@@ -89,6 +96,7 @@ class SocialiteController extends Controller
     public function liffCallback(): RedirectResponse
     {
         $token    = request()->string('access_token')->toString();
+        $idToken  = request()->string('id_token')->toString();
         $redirect = request()->string('redirect', '/')->toString();
 
         if (empty($token)) {
@@ -111,19 +119,44 @@ class SocialiteController extends Controller
             return redirect($redirect)->with('auth_error', 'LIFF 登入失敗，請再試一次');
         }
 
-        $user = User::where('provider', 'line')->where('provider_id', $providerId)->first()
-            ?? User::create([
+        // 若有 id_token 且開啟 email scope，向 LINE 驗證取得真實 email
+        $email = null;
+        if ($idToken && config('services.line.email_scope')) {
+            try {
+                $verifyResp = (new \GuzzleHttp\Client())->post('https://api.line.me/oauth2/v2.1/verify', [
+                    'form_params' => [
+                        'id_token'  => $idToken,
+                        'client_id' => config('services.line.client_id'),
+                    ],
+                    'timeout' => 8,
+                ]);
+                $claims = json_decode((string) $verifyResp->getBody(), true);
+                $email  = $claims['email'] ?? null;
+            } catch (\Throwable) {
+                // email 取得失敗不阻斷登入
+            }
+        }
+
+        $user = User::where('provider', 'line')->where('provider_id', $providerId)->first();
+
+        if (! $user && $email) {
+            $user = User::where('email', $email)->first();
+        }
+
+        if ($user) {
+            $updates = ['avatar' => $profile['pictureUrl'] ?? $user->avatar];
+            if ($email && str_ends_with($user->email, '@ratdar.local')) {
+                $updates['email'] = $email;
+            }
+            $user->fill(array_merge($updates, ['provider' => 'line', 'provider_id' => $providerId]))->save();
+        } else {
+            $user = User::create([
                 'name'        => $profile['displayName'] ?? '匿名捕鼠人',
-                'email'       => 'line_' . $providerId . '@ratdar.local',
+                'email'       => $email ?: ('line_' . $providerId . '@ratdar.local'),
                 'provider'    => 'line',
                 'provider_id' => $providerId,
                 'avatar'      => $profile['pictureUrl'] ?? null,
             ]);
-
-        // 更新頭像
-        if (isset($profile['pictureUrl'])) {
-            $user->avatar = $profile['pictureUrl'];
-            $user->save();
         }
 
         Auth::login($user, remember: true);
