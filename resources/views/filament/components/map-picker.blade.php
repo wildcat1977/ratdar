@@ -81,8 +81,8 @@ function mapPickerInit_{{ $record?->id ?? 0 }}() {
                     const ll = this.marker.getLatLng();
                     const lat = parseFloat(ll.lat.toFixed(7));
                     const lng = parseFloat(ll.lng.toFixed(7));
-                    $wire.set('data.latitude',  lat);
-                    $wire.set('data.longitude', lng);
+                    this.$wire.set('data.latitude',  lat);
+                    this.$wire.set('data.longitude', lng);
                 });
 
                 const nearby = @js($nearbyReports);
