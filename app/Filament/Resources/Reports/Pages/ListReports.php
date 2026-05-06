@@ -27,6 +27,12 @@ class ListReports extends ListRecords
 
             'with_photo' => Tab::make('有照片')
                 ->modifyQueryUsing(fn (Builder $query) => $query->whereNotNull('image_path')),
+
+            'pending' => Tab::make('待審核')
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('status', Report::STATUS_PENDING)),
+
+            'rejected' => Tab::make('已拒絕')
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('status', Report::STATUS_REJECTED)),
         ];
     }
 
