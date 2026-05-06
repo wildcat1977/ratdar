@@ -92,6 +92,10 @@ const TILE_OPTIONS = {
     maxZoom: 20,
 };
 
+// 熱區色階：暗底→亮色跳出；亮底→深色才跳出（反轉亮度進程）
+const HEAT_GRADIENT_DARK  = { 0.15: '#7f1d1d', 0.45: '#ef4444', 0.70: '#f97316', 0.90: '#fbbf24' };
+const HEAT_GRADIENT_LIGHT = { 0.20: '#fde68a', 0.45: '#fb923c', 0.70: '#dc2626', 0.90: '#7f1d1d' };
+
 let radarMap = null;
 let heatLayer = null;
 let markersLayer = null;
@@ -268,6 +272,13 @@ function setMapTheme(theme) {
             TILE_OPTIONS
         ).addTo(radarMap);
     }
+    // 同步切換熱區色階；leaflet.heat 需手動 redraw 才會套用新 gradient
+    if (heatLayer) {
+        heatLayer.setOptions({
+            gradient: theme === 'dark' ? HEAT_GRADIENT_DARK : HEAT_GRADIENT_LIGHT,
+        });
+        if (typeof heatLayer.redraw === 'function') heatLayer.redraw();
+    }
 }
 
 const ThemeToggleControl = L.Control.extend({
@@ -315,7 +326,7 @@ function initRadar() {
         blur: 18,
         maxZoom: 17,
         minOpacity: 0.35,
-        gradient: { 0.15: '#7f1d1d', 0.45: '#ef4444', 0.7: '#f97316', 0.9: '#fbbf24' },
+        gradient: currentTheme === 'dark' ? HEAT_GRADIENT_DARK : HEAT_GRADIENT_LIGHT,
     }).addTo(radarMap);
 
     markersLayer = buildMarkersLayer(markersData);
