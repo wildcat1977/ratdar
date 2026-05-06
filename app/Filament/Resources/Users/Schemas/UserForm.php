@@ -22,6 +22,7 @@ class UserForm
                     ->label('Email')
                     ->email()
                     ->required()
+                    ->disabledOn('edit')
                     ->unique(ignoreRecord: true)
                     ->maxLength(255),
 
