@@ -11,6 +11,7 @@ use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
 use Filament\Widgets\AccountWidget;
 use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -18,6 +19,7 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
@@ -42,6 +44,35 @@ class AdminPanelProvider extends PanelProvider
                 AccountWidget::class,
                 FilamentInfoWidget::class,
             ])
+            ->sidebarCollapsibleOnDesktop()
+            ->renderHook(
+                PanelsRenderHook::BODY_START,
+                fn (): HtmlString => new HtmlString(<<<'HTML'
+                    <script>
+                        (function () {
+                            if (window.self === window.top) return;
+
+                            const KEYS = ['isOpen', 'isOpenDesktop'];
+                            const snapshot = {};
+                            KEYS.forEach(k => snapshot[k] = localStorage.getItem(k));
+
+                            // iframe 載入時：強制收起 sidebar
+                            KEYS.forEach(k => localStorage.setItem(k, 'false'));
+
+                            // iframe 關閉/卸載時：還原外層 admin 原本的值
+                            window.addEventListener('pagehide', () => {
+                                KEYS.forEach(k => {
+                                    if (snapshot[k] === null) {
+                                        localStorage.removeItem(k);
+                                    } else {
+                                        localStorage.setItem(k, snapshot[k]);
+                                    }
+                                });
+                            });
+                        })();
+                    </script>
+                    HTML)
+            )
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
