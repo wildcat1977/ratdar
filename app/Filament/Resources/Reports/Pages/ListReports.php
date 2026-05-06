@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Reports\Pages;
 
 use App\Filament\Resources\Reports\ReportResource;
+use App\Models\Report;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -27,5 +28,30 @@ class ListReports extends ListRecords
             'with_photo' => Tab::make('有照片')
                 ->modifyQueryUsing(fn (Builder $query) => $query->whereNotNull('image_path')),
         ];
+    }
+
+    /**
+     * 從 modal 內的 wire:click 呼叫，更新單筆回報狀態（同帳號展開列表用）
+     */
+    public function updateReportStatus(int $id, string $status, ?string $reason = null): void
+    {
+        $allowed = [
+            Report::STATUS_APPROVED,
+            Report::STATUS_REJECTED,
+            Report::STATUS_REPORTED_1999,
+            Report::STATUS_RESOLVED,
+            Report::STATUS_PENDING,
+        ];
+
+        if (! in_array($status, $allowed, true)) {
+            return;
+        }
+
+        $update = ['status' => $status];
+        if ($reason !== null && array_key_exists($reason, Report::REJECTION_REASONS)) {
+            $update['rejection_reason'] = $reason;
+        }
+
+        Report::find($id)?->update($update);
     }
 }
