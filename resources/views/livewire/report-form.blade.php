@@ -107,8 +107,9 @@ new class extends Component
 
         $this->validate();
 
-        $filename = null;
-        $status   = config('radar.auto_approve')
+        $filename   = null;
+        $hardReject = false;
+        $status     = config('radar.auto_approve')
             ? Report::STATUS_APPROVED
             : Report::STATUS_PENDING;
 
@@ -123,8 +124,10 @@ new class extends Component
             $moderation = app(ImageModerationService::class)
                 ->moderate($this->photo->getRealPath(), $this->type);
 
+            // 低把握度的拒絕（confidence < 0.8）送人工審核，不自動擋掉
+            $hardReject = ! $moderation['is_valid'] && ($moderation['confidence'] ?? 0.0) >= 0.8;
             $status = match(true) {
-                ! $moderation['is_valid']    => Report::STATUS_REJECTED,
+                $hardReject                  => Report::STATUS_REJECTED,
                 config('radar.auto_approve') => Report::STATUS_APPROVED,
                 default                      => Report::STATUS_PENDING,
             };
@@ -141,7 +144,7 @@ new class extends Component
             'status'      => $status,
         ]);
 
-        if ($this->photo && isset($moderation) && ! $moderation['is_valid']) {
+        if ($this->photo && isset($moderation) && $hardReject) {
             $this->rejected = true;
             return;
         }
