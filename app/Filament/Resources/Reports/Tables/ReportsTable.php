@@ -39,6 +39,7 @@ class ReportsTable
                     ->description(fn (Report $record): string =>
                         implode(' ', array_filter([
                             $record->user?->is_banned ? '⛔ 已封禁' : null,
+                            $record->user_reports_count > 1 ? "共 {$record->user_reports_count} 筆回報" : null,
                             ((float) $record->latitude === Report::DEFAULT_LATITUDE &&
                              (float) $record->longitude === Report::DEFAULT_LONGITUDE)
                                 ? '⚠️ 未提供位置授權'
@@ -47,10 +48,18 @@ class ReportsTable
                                         ? $record->latitude . ', ' . $record->longitude
                                         : '—')),
                         ])))
-                    ->url(fn (Report $record): ?string => $record->user_id
-                        ? UserResource::getUrl('edit', ['record' => $record->user_id])
-                        : null)
-                    ->openUrlInNewTab(),
+                    ->action(
+                        Action::make('view_user')
+                            ->modalHeading(fn (Report $record) => ($record->user?->name ?? '使用者') . ' 的使用者資料')
+                            ->modalWidth('7xl')
+                            ->modalContent(fn (Report $record) => new \Illuminate\Support\HtmlString(
+                                '<iframe src="' . htmlspecialchars(UserResource::getUrl('edit', ['record' => $record->user_id]), ENT_QUOTES) . '"'
+                                . ' style="width:100%;height:82vh;border:none;" loading="lazy"></iframe>'
+                            ))
+                            ->modalSubmitAction(false)
+                            ->modalCancelActionLabel('關閉')
+                            ->visible(fn (Report $record) => $record->user_id !== null)
+                    ),
 
                 BadgeColumn::make('type')
                     ->label('類型')
@@ -174,23 +183,6 @@ class ReportsTable
                     ->action(fn (Report $record, array $data) => $record->update([
                         'status'           => Report::STATUS_REJECTED,
                         'rejection_reason' => $data['rejection_reason'],
-                    ])),
-
-                Action::make('same_user_reports')
-                    ->label(fn (Report $record) => '同帳號 ' . $record->user_reports_count . ' 筆')
-                    ->icon('heroicon-o-user-group')
-                    ->color('info')
-                    ->link()
-                    ->visible(fn (Report $record) => $record->user_id !== null && $record->user_reports_count > 1)
-                    ->modalHeading(fn (Report $record) => ($record->user?->name ?? '使用者') . ' 的所有回報（共 ' . $record->user_reports_count . ' 筆）')
-                    ->modalWidth('2xl')
-                    ->modalSubmitAction(false)
-                    ->modalCancelActionLabel('關閉')
-                    ->modalContent(fn (Report $record) => view('filament.modals.user-reports', [
-                        'reports'   => Report::where('user_id', $record->user_id)
-                            ->orderByDesc('created_at')
-                            ->get(),
-                        'currentId' => $record->id,
                     ])),
 
                 EditAction::make(),
