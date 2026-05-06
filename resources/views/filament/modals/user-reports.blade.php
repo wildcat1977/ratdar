@@ -26,7 +26,7 @@ $reasonsJson = json_encode(\App\Models\Report::REJECTION_REASONS, JSON_UNESCAPED
                 reason: '',
                 newStatus: '{{ $report->status }}',
                 newReason: '{{ $report->rejection_reason }}',
-                reasons: {grep 'total_tokens' storage/logs/moderation-*.log | grep -oP 'total_tokens:\K\d+' | awk '{s+=} END {print s}' $reasonsJson grep 'total_tokens' storage/logs/moderation-*.log | grep -oP 'total_tokens:\K\d+' | awk '{s+=} END {print s}'},
+                reasons: {!! $reasonsJson !!},
                 statusLabel(s) {
                     return { pending:'待審核', approved:'🔴 已核准', rejected:'❌ 已拒絕', reported_1999:'🟡 通報 1999', resolved:'🟢 已處理' }[s] ?? s;
                 }
@@ -81,6 +81,7 @@ $reasonsJson = json_encode(\App\Models\Report::REJECTION_REASONS, JSON_UNESCAPED
                     核准
                 </button>
                 <button
+                    x-on:click="rejectOpen = !rejectOpen"
                     x-bind:class="newStatus === 'rejected' ? 'bg-gray-400 dark:bg-gray-600' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'"
                     class="rounded px-2.5 py-1 text-xs font-medium text-gray-700 dark:text-gray-200 transition active:scale-95">
                     拒絕
