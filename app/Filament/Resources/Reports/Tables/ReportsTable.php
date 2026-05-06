@@ -26,6 +26,7 @@ class ReportsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->withCount('userReports'))
             ->columns([
                 TextColumn::make('id')
                     ->label('ID')
@@ -173,6 +174,23 @@ class ReportsTable
                     ->action(fn (Report $record, array $data) => $record->update([
                         'status'           => Report::STATUS_REJECTED,
                         'rejection_reason' => $data['rejection_reason'],
+                    ])),
+
+                Action::make('same_user_reports')
+                    ->label(fn (Report $record) => '同帳號 ' . $record->user_reports_count . ' 筆')
+                    ->icon('heroicon-o-user-group')
+                    ->color('info')
+                    ->link()
+                    ->visible(fn (Report $record) => $record->user_id !== null && $record->user_reports_count > 1)
+                    ->modalHeading(fn (Report $record) => ($record->user?->name ?? '使用者') . ' 的所有回報（共 ' . $record->user_reports_count . ' 筆）')
+                    ->modalWidth('2xl')
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('關閉')
+                    ->modalContent(fn (Report $record) => view('filament.modals.user-reports', [
+                        'reports'   => Report::where('user_id', $record->user_id)
+                            ->orderByDesc('created_at')
+                            ->get(),
+                        'currentId' => $record->id,
                     ])),
 
                 EditAction::make(),

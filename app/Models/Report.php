@@ -6,6 +6,7 @@ use Database\Factories\ReportFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Cache;
 
 class Report extends Model
@@ -74,6 +75,12 @@ class Report extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(\App\Models\User::class);
+    }
+
+    /** 同一使用者的所有回報（自我關聯，供 withCount 使用） */
+    public function userReports(): HasMany
+    {
+        return $this->hasMany(static::class, 'user_id', 'user_id');
     }
 
     protected static function booted(): void
