@@ -35,7 +35,7 @@ class ReportsTable
                 TextColumn::make('user.name')
                     ->label('回報者')
                     ->default('訪客')
-                    ->searchable()
+                    ->searchable(['user.name', 'address'])
                     ->description(fn (Report $record): string =>
                         implode(' ', array_filter([
                             $record->user?->is_banned ? '⛔ 已封禁' : null,
