@@ -2,7 +2,7 @@
 
 ## 系統需求
 
-- PHP 8.3+（已測 PHP 8.5）
+- PHP 8.4+（已測 PHP 8.5）
 - Composer 2.x
 - Node.js 20+
 - Redis 6+
@@ -99,7 +99,7 @@ server {
 
     location ~ \.php$ {
         include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+        fastcgi_pass unix:/run/php/php8.4-fpm.sock;
     }
 }
 ```
