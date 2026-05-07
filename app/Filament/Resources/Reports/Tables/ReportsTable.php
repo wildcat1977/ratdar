@@ -13,13 +13,14 @@ use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Tables\Columns\BadgeColumn;
-use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\HtmlString;
 
 class ReportsTable
 {
@@ -35,26 +36,27 @@ class ReportsTable
                 TextColumn::make('user.name')
                     ->label('回報者')
                     ->default('訪客')
-                    ->searchable(['user.name', 'address'])
-                    ->description(fn (Report $record): string =>
-                        implode(' ', array_filter([
-                            $record->user?->is_banned ? '⛔ 已封禁' : null,
-                            $record->user_reports_count > 1 ? "共 {$record->user_reports_count} 筆回報" : null,
-                            ((float) $record->latitude === Report::DEFAULT_LATITUDE &&
-                             (float) $record->longitude === Report::DEFAULT_LONGITUDE)
-                                ? '⚠️ 未提供位置授權'
-                                : ($record->address
-                                    ?: ($record->latitude !== null && $record->longitude !== null
-                                        ? $record->latitude . ', ' . $record->longitude
-                                        : '—')),
-                        ])))
+                    ->searchable([], fn (Builder $query, string $search): Builder => $query
+                        ->whereRelation('user', 'name', 'like', "%{$search}%")
+                        ->orWhere('address', 'like', "%{$search}%"))
+                    ->description(fn (Report $record): string => implode(' ', array_filter([
+                        $record->user?->is_banned ? '⛔ 已封禁' : null,
+                        $record->user_reports_count > 1 ? "共 {$record->user_reports_count} 筆回報" : null,
+                        ((float) $record->latitude === Report::DEFAULT_LATITUDE &&
+                         (float) $record->longitude === Report::DEFAULT_LONGITUDE)
+                            ? '⚠️ 未提供位置授權'
+                            : ($record->address
+                                ?: ($record->latitude !== null && $record->longitude !== null
+                                    ? $record->latitude.', '.$record->longitude
+                                    : '—')),
+                    ])))
                     ->action(
                         Action::make('view_user')
-                            ->modalHeading(fn (Report $record) => ($record->user?->name ?? '使用者') . ' 的使用者資料')
+                            ->modalHeading(fn (Report $record) => ($record->user?->name ?? '使用者').' 的使用者資料')
                             ->modalWidth('7xl')
-                            ->modalContent(fn (Report $record) => new \Illuminate\Support\HtmlString(
-                                '<iframe src="' . htmlspecialchars(UserResource::getUrl('edit', ['record' => $record->user_id]), ENT_QUOTES) . '"'
-                                . ' style="width:100%;height:82vh;border:none;" loading="lazy"></iframe>'
+                            ->modalContent(fn (Report $record) => new HtmlString(
+                                '<iframe src="'.htmlspecialchars(UserResource::getUrl('edit', ['record' => $record->user_id]), ENT_QUOTES).'"'
+                                .' style="width:100%;height:82vh;border:none;" loading="lazy"></iframe>'
                             ))
                             ->modalSubmitAction(false)
                             ->modalCancelActionLabel('關閉')
@@ -64,11 +66,11 @@ class ReportsTable
                 BadgeColumn::make('type')
                     ->label('類型')
                     ->colors([
-                        'danger'  => Report::TYPE_RAT,
+                        'danger' => Report::TYPE_RAT,
                         'primary' => Report::TYPE_POISON,
                     ])
                     ->formatStateUsing(fn (string $state) => match ($state) {
-                        Report::TYPE_RAT    => '🐀 鼠蹤',
+                        Report::TYPE_RAT => '🐀 鼠蹤',
                         Report::TYPE_POISON => '☠️ 毒餌',
                         default => $state,
                     }),
@@ -89,29 +91,32 @@ class ReportsTable
                     ->searchable()
                     ->default('—'),
 
+                TextColumn::make('address')
+                    ->hidden(),
+
                 BadgeColumn::make('status')
                     ->label('狀態')
                     ->colors([
                         'warning' => Report::STATUS_PENDING,
                         'success' => Report::STATUS_APPROVED,
-                        'danger'  => Report::STATUS_REJECTED,
+                        'danger' => Report::STATUS_REJECTED,
                         'warning' => Report::STATUS_REPORTED_1999,
                         'success' => Report::STATUS_RESOLVED,
                     ])
                     ->color(fn (string $state) => match ($state) {
-                        Report::STATUS_PENDING       => 'gray',
-                        Report::STATUS_APPROVED      => 'danger',
+                        Report::STATUS_PENDING => 'gray',
+                        Report::STATUS_APPROVED => 'danger',
                         Report::STATUS_REPORTED_1999 => 'warning',
-                        Report::STATUS_RESOLVED      => 'success',
-                        Report::STATUS_REJECTED      => 'gray',
+                        Report::STATUS_RESOLVED => 'success',
+                        Report::STATUS_REJECTED => 'gray',
                         default => 'gray',
                     })
                     ->formatStateUsing(fn (string $state) => match ($state) {
-                        Report::STATUS_PENDING       => '待審核',
-                        Report::STATUS_APPROVED      => '🔴 已核准（地圖上架）',
-                        Report::STATUS_REJECTED      => '已拒絕',
+                        Report::STATUS_PENDING => '待審核',
+                        Report::STATUS_APPROVED => '🔴 已核准（地圖上架）',
+                        Report::STATUS_REJECTED => '已拒絕',
                         Report::STATUS_REPORTED_1999 => '🟡 已通報 1999',
-                        Report::STATUS_RESOLVED      => '🟢 已處理完畢',
+                        Report::STATUS_RESOLVED => '🟢 已處理完畢',
                         default => $state,
                     }),
 
@@ -132,17 +137,17 @@ class ReportsTable
                 SelectFilter::make('type')
                     ->label('類型篩選')
                     ->options([
-                        Report::TYPE_RAT    => '🐀 鼠蹤',
+                        Report::TYPE_RAT => '🐀 鼠蹤',
                         Report::TYPE_POISON => '☠️ 毒餌',
                     ]),
                 SelectFilter::make('status')
                     ->label('狀態篩選')
                     ->options([
-                        Report::STATUS_PENDING       => '待審核',
-                        Report::STATUS_APPROVED      => '🔴 已核准（地圖上架）',
+                        Report::STATUS_PENDING => '待審核',
+                        Report::STATUS_APPROVED => '🔴 已核准（地圖上架）',
                         Report::STATUS_REPORTED_1999 => '🟡 已通報 1999',
-                        Report::STATUS_RESOLVED      => '🟢 已處理完畢',
-                        Report::STATUS_REJECTED      => '已拒絕',
+                        Report::STATUS_RESOLVED => '🟢 已處理完畢',
+                        Report::STATUS_REJECTED => '已拒絕',
                     ]),
             ])
             ->recordActions([
@@ -181,7 +186,7 @@ class ReportsTable
                             ->helperText('選擇原因方便其他審核人員了解標準'),
                     ])
                     ->action(fn (Report $record, array $data) => $record->update([
-                        'status'           => Report::STATUS_REJECTED,
+                        'status' => Report::STATUS_REJECTED,
                         'rejection_reason' => $data['rejection_reason'],
                     ])),
 
@@ -226,7 +231,7 @@ class ReportsTable
 
                             if ($userIds->isNotEmpty()) {
                                 User::whereIn('id', $userIds)->update([
-                                    'is_banned'  => true,
+                                    'is_banned' => true,
                                     'ban_reason' => $data['ban_reason'],
                                 ]);
                             }
