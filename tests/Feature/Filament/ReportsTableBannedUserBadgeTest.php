@@ -47,4 +47,16 @@ class ReportsTableBannedUserBadgeTest extends TestCase
             ->test(ListReports::class)
             ->assertTableColumnHasDescription('user.name', '台北市信義區', record: $report);
     }
+
+    public function test_reports_table_can_search_by_address(): void
+    {
+        $matchingReport = Report::factory()->create(['address' => '台北市中正區忠孝西路']);
+        $otherReport = Report::factory()->create(['address' => '新北市板橋區文化路']);
+
+        Livewire::actingAs($this->admin)
+            ->test(ListReports::class)
+            ->searchTable('中正區')
+            ->assertCanSeeTableRecords([$matchingReport])
+            ->assertCanNotSeeTableRecords([$otherReport]);
+    }
 }
