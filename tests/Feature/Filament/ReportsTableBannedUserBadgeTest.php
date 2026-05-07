@@ -55,6 +55,7 @@ class ReportsTableBannedUserBadgeTest extends TestCase
 
         Livewire::actingAs($this->admin)
             ->test(ListReports::class)
+            ->assertTableColumnHidden('address')
             ->searchTable('中正區')
             ->assertCanSeeTableRecords([$matchingReport])
             ->assertCanNotSeeTableRecords([$otherReport]);
