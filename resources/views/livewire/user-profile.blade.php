@@ -48,7 +48,7 @@ new class extends Component
         <div class="flex items-center gap-5">
             @if (Auth::user()->avatar)
                 <img src="{{ Auth::user()->avatar }}"
-                     alt="頭像"
+                     alt="{{ __('頭像') }}"
                      class="h-16 w-16 rounded-full ring-2 ring-red-500/40 object-cover">
             @else
                 <div class="flex h-16 w-16 items-center justify-center rounded-full bg-red-600/20 text-2xl ring-2 ring-red-500/40">
@@ -59,15 +59,15 @@ new class extends Component
             <div class="flex-1">
                 <p class="text-xs text-slate-500">{{ Auth::user()->email }}</p>
                 <p class="mt-1 text-sm text-slate-400">
-                    已回報 <span class="font-bold text-red-400">{{ Auth::user()->reports()->count() }}</span> 筆
-                    ／核准 <span class="font-bold text-green-400">{{ Auth::user()->reports()->where('status', 'approved')->count() }}</span> 筆
+                    {{ __('已回報 :count 筆', ['count' => Auth::user()->reports()->count()]) }}
+                    ／{{ __('核准 :count 筆', ['count' => Auth::user()->reports()->where('status', 'approved')->count()]) }}
                 </p>
             </div>
         </div>
 
         {{-- 暱稱編輯 --}}
         <div class="mt-5 border-t border-white/10 pt-5">
-            <label class="block text-xs font-medium text-slate-400">顯示暱稱</label>
+            <label class="block text-xs font-medium text-slate-400">{{ __('顯示昵稱') }}</label>
             <div class="mt-2 flex gap-3">
                 <input wire:model="displayName"
                        type="text"
@@ -76,8 +76,8 @@ new class extends Component
                 <button wire:click="save"
                         wire:loading.attr="disabled"
                         class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-50">
-                    <span wire:loading.remove wire:target="save">儲存</span>
-                    <span wire:loading wire:target="save">儲存中…</span>
+                    <span wire:loading.remove wire:target="save">{{ __('儲存') }}</span>
+                    <span wire:loading wire:target="save">{{ __('儲存中…') }}</span>
                 </button>
             </div>
             @error('displayName')
@@ -85,7 +85,7 @@ new class extends Component
             @enderror
             @if ($saved)
                 <p class="mt-1 text-xs text-green-400" x-data x-init="setTimeout(() => $wire.set('saved', false), 2500)">
-                    暱稱已更新！
+                    {{ __('昵稱已更新！') }}
                 </p>
             @endif
         </div>
@@ -98,8 +98,8 @@ new class extends Component
                  doShare() {
                      if (navigator.share) {
                          navigator.share({
-                             title: 'Rat Radar 捕鼠成就',
-                             text: '我在 Rat Radar 累積通報了老鼠蹤跡，快來看看！',
+                             title: 'Rat Radar {{ __("捕鼠成就") }}',
+                             text: '{{ __("我在 Rat Radar 累積通報了老鼠蹤跡，快來看看！") }}',
                              url: this.shareUrl,
                          }).catch(() => {});
                      } else {
@@ -117,30 +117,30 @@ new class extends Component
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-red-400" viewBox="0 0 20 20" fill="currentColor">
                     <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47A3 3 0 1015 12a3 3 0 00-2.977-2.63L7.083 6.9a3 3 0 000-1.8l4.94-2.47A3 3 0 0015 8z"/>
                 </svg>
-                <span x-show="!copied">分享我的成就卡</span>
-                <span x-show="copied" x-cloak class="text-green-400">連結已複製！</span>
+                <span x-show="!copied">{{ __('分享成就卡') }}</span>
+                <span x-show="copied" x-cloak class="text-green-400">{{ __('連結已複製！') }}</span>
             </button>
             <p class="mt-1.5 text-center text-[11px] text-slate-600">
-                分享後可預覽你的成就勳章圖片
+                {{ __('分享後可預覽成就勳章圖片') }}
             </p>
         </div>
     </div>
 
     {{-- 我的回報清單 --}}
-    <h2 class="mt-8 text-base font-bold text-slate-200">我的回報紀錄</h2>
+    <h2 class="mt-8 text-base font-bold text-slate-200">{{ __('我的回報紀錄') }}</h2>
 
     @if ($reports->isEmpty())
         <div class="mt-4 rounded-2xl bg-white/5 p-8 text-center text-slate-500">
-            還沒有任何回報，快去發現老鼠吧！
+            {{ __('還沒有任何回報，快去發現老鼠吧！') }}
         </div>
     @else
         <div class="mt-4 flex flex-col gap-3">
             @foreach ($reports as $report)
                 @php
                     $badge = match($report->status) {
-                        'approved' => ['text' => '已核准', 'class' => 'bg-green-500/20 text-green-400'],
-                        'rejected' => ['text' => '已拒絕', 'class' => 'bg-red-500/20 text-red-400'],
-                        default     => ['text' => '待審核', 'class' => 'bg-yellow-500/20 text-yellow-400'],
+                        'approved' => ['text' => __('已核准'), 'class' => 'bg-green-500/20 text-green-400'],
+                        'rejected' => ['text' => __('已拒絕'), 'class' => 'bg-red-500/20 text-red-400'],
+                        default     => ['text' => __('待審核'), 'class' => 'bg-yellow-500/20 text-yellow-400'],
                     };
                     $mapsUrl = 'https://www.google.com/maps?q=' . $report->latitude . ',' . $report->longitude;
                 @endphp
@@ -149,7 +149,7 @@ new class extends Component
                     <div class="h-20 w-20 shrink-0 overflow-hidden rounded-lg">
                         @if ($report->image_path)
                             <img src="{{ asset('storage/' . $report->image_path) }}"
-                                 alt="回報照片"
+                                 alt="{{ __('回報照片') }}"
                                  class="h-full w-full object-cover">
                         @else
                             <div class="flex h-full w-full items-center justify-center bg-black/30 text-2xl">🐀</div>
@@ -168,7 +168,7 @@ new class extends Component
                             @if ($report->description)
                                 <p class="mt-1 line-clamp-2 text-sm text-slate-300">{{ $report->description }}</p>
                             @else
-                                <p class="mt-1 text-sm text-slate-600 italic">（無描述）</p>
+                                <p class="mt-1 text-sm text-slate-600 italic">{{ __('（無描述）') }}</p>
                             @endif
                         </div>
                         <a href="{{ $mapsUrl }}"

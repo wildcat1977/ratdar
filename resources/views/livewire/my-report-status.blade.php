@@ -50,7 +50,7 @@ new class extends Component
         $ts = $report->reviewed_at?->timestamp ?? 0;
         $isApproved = in_array($report->status, [Report::STATUS_APPROVED, Report::STATUS_REPORTED_1999, Report::STATUS_RESOLVED]);
         $isRejected = $report->status === Report::STATUS_REJECTED;
-        $typeLabel  = $report->type === 'poison' ? '☠️ 毒餌' : '🐀 鼠蹤';
+        $typeLabel  = $report->type === 'poison' ? __('☠️ 毒餌') : __('🐀 鼠蹤');
         $reasonText = $report->rejection_reason
             ? (Report::REJECTION_REASONS[$report->rejection_reason] ?? $report->rejection_reason)
             : null;
@@ -66,17 +66,17 @@ new class extends Component
         <span class="mt-0.5 text-xl leading-none">{{ $isApproved ? '✅' : '❌' }}</span>
         <div class="flex-1 min-w-0">
             <p class="text-xs font-semibold {{ $isApproved ? 'text-green-300' : 'text-red-300' }}">
-                {{ $typeLabel }}通報審核{{ $isApproved ? '通過' : '未通過' }}
+                {{ __(':typeLabel 通報審核:result', ['typeLabel' => $typeLabel, 'result' => $isApproved ? __('通過') : __('未通過')]) }}
                 <span class="ml-1 font-normal text-slate-500 text-[10px]">#{{ $report->id }}</span>
             </p>
             @if($isApproved)
-                <p class="mt-0.5 text-[11px] text-slate-400">已上架至地圖，感謝你的協助！</p>
+                <p class="mt-0.5 text-[11px] text-slate-400">{{ __('已上架至地圖，感謝你的協助！') }}</p>
             @else
                 <p class="mt-0.5 text-[11px] text-slate-400">
                     @if($reasonText)
-                        原因：{{ $reasonText }}
+                        {{ __('原因：:reason', ['reason' => $reasonText]) }}
                     @else
-                        圖片或資訊未符合通報規範
+                        {{ __('圖片或資訊未符合通報規範') }}
                     @endif
                 </p>
             @endif
@@ -87,7 +87,7 @@ new class extends Component
         <button
             @click="dismiss({{ $report->id }}, {{ $ts }})"
             class="absolute top-2 right-3 text-slate-600 hover:text-slate-300 text-xs leading-none"
-            title="關閉">✕</button>
+            title="{{ __('關閉') }}">✕</button>
     </div>
     @endforeach
 </div>

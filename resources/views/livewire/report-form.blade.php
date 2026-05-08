@@ -51,10 +51,10 @@ new class extends Component
     public function messages(): array
     {
         return [
-            'description.required' => '未上傳照片時，備註說明為必填。',
-            'description.min'      => '未上傳照片時，備註說明至少需要 20 個字元。',
-            'photo.image'          => '請上傳圖片檔案。',
-            'photo.max'            => '照片檔案不得超過 20MB。',
+            'description.required' => __('未上傳照片時，備註說明為必填。'),
+            'description.min'      => __('未上傳照片時，備註說明至少需要 20 個字元。'),
+            'photo.image'          => __('請上傳圖片檔案。'),
+            'photo.max'            => __('照片檔案不得超過 20MB。'),
         ];
     }
 
@@ -101,7 +101,7 @@ new class extends Component
     public function submit(): void
     {
         if (Auth::user()?->is_banned) {
-            $this->addError('description', '您的帳號已被停用，無法提交通報。如有疑問請聯絡管理員。');
+            $this->addError('description', __('您的帳號已被停用，無法提交通報。如有疑問請聯絡管理員。'));
             return;
         }
 
@@ -166,11 +166,11 @@ new class extends Component
                         <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-red-600/20">
                             <span class="text-4xl">📡</span>
                         </div>
-                        <h2 class="text-xl font-bold">通報成功</h2>
-                        <p class="mt-2 text-sm text-slate-400">雷達已更新，感謝你的協助！</p>
+                        <h2 class="text-xl font-bold">{{ __('通報成功') }}</h2>
+                        <p class="mt-2 text-sm text-slate-400">{{ __('雷達已更新，感謝你的協助！') }}</p>
                         <button wire:click="close"
                                 class="mt-6 w-full rounded-xl bg-red-600 px-4 py-3 font-semibold">
-                            關閉
+                            {{ __('關閉') }}
                         </button>
                     </div>
                 @elseif ($rejected)
@@ -178,23 +178,22 @@ new class extends Component
                         <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-yellow-600/20">
                             <span class="text-4xl">🚫</span>
                         </div>
-                        <h2 class="text-xl font-bold text-yellow-400">圖片未通過審核</h2>
+                        <h2 class="text-xl font-bold text-yellow-400">{{ __('圖片未通過審核') }}</h2>
                         <p class="mt-2 text-sm text-slate-400">
-                            AI 偵測到照片可能不符合通報規範<br>
-                            （請上傳現場環境照，避免人臉或無關圖片）
+                            {{ __('AI 偵測到照片可能不符合通報規範（請上傳現場環境照，避免人臉或無關圖片）') }}
                         </p>
                         <button wire:click="close"
                                 class="mt-6 w-full rounded-xl bg-white/10 px-4 py-3 font-semibold text-slate-300 hover:bg-white/20">
-                            關閉
+                            {{ __('關閉') }}
                         </button>
                     </div>
                 @else
                     <div class="flex items-start justify-between">
                         <h2 class="text-xl font-bold">
                             @if ($type === 'poison')
-                                <span class="text-purple-300">☠️ 回報毒餌</span>
+                                <span class="text-purple-300">{{ __('☠️ 回報毒餌') }}</span>
                             @else
-                                <span>🐀 回報鼠蹤</span>
+                                <span>{{ __('🐀 回報鼠蹤') }}</span>
                             @endif
                         </h2>
                         <button wire:click="close" class="text-slate-500 hover:text-slate-200">✕</button>
@@ -203,7 +202,7 @@ new class extends Component
                     <form wire:submit="submit" class="mt-4 space-y-4">
                         {{-- 通報類型切換 --}}
                         <div>
-                            <label class="block text-xs font-medium text-slate-400">類型</label>
+                            <label class="block text-xs font-medium text-slate-400">{{ __('類型') }}</label>
                             <div class="mt-2 grid grid-cols-2 gap-2">
                                 <button type="button"
                                         wire:click="$set('type', 'rat')"
@@ -211,7 +210,7 @@ new class extends Component
                                                {{ $type === 'rat'
                                                    ? 'border-red-500/60 bg-red-500/15 text-red-200 shadow-[0_0_18px_rgba(239,68,68,0.35)]'
                                                    : 'border-white/10 bg-black/30 text-slate-400 hover:border-white/20' }}">
-                                    🐀 發現鼠蹤
+                                    {{ __('🐀 發現鼠蹤') }}
                                 </button>
                                 <button type="button"
                                         wire:click="$set('type', 'poison')"
@@ -219,26 +218,26 @@ new class extends Component
                                                {{ $type === 'poison'
                                                    ? 'border-purple-500/60 bg-purple-500/15 text-purple-200 shadow-[0_0_18px_rgba(168,85,247,0.35)]'
                                                    : 'border-white/10 bg-black/30 text-slate-400 hover:border-white/20' }}">
-                                    ☠️ 發現毒餌
+                                    {{ __('☠️ 發現毒餌') }}
                                 </button>
                             </div>
                             @if ($type === 'poison')
                                 <p class="mt-2 rounded-md bg-purple-500/10 px-3 py-2 text-[11px] leading-relaxed text-purple-200/80">
-                                    回報被隨意放置於盆栽、花圃、騎樓的老鼠藥/毒餌，提醒寵物飼主避開該區域與野生動物保育者關注。
+                                    {{ __('回報被隨意放置於盆栽、花圃、騎樓的老鼠藥/毒餌，提醒寵物飼主避開該區域與野生動物保育者關注。') }}
                                 </p>
                                 {{-- 毒餌辨識圖 + 說明文連結 --}}
                                 <div x-data="{ lightbox: false }" class="mt-2 flex items-center gap-3">
                                     <button type="button" @click="lightbox = true" class="shrink-0 focus:outline-none">
                                         <img src="https://ratdar.taipei/rat-poison-demo.png"
-                                             alt="常見鼠藥外觀辨識"
+                                             alt="{{ __('常見鼠藥外觀辨識') }}"
                                              class="h-16 w-16 rounded-lg object-cover ring-1 ring-purple-400/40 hover:ring-purple-400/80 transition">
                                     </button>
                                     <div class="text-[11px] text-purple-200/70 leading-relaxed">
-                                        <span class="font-medium text-purple-300">常見鼠藥外觀(點圖可放大)</span><br>
+                                        <span class="font-medium text-purple-300">{{ __('常見鼠藥外觀(點圖可放大)') }}</span><br>
                                         <a href="https://www.threads.com/@urmomovet/post/DX38LeFih8m"
                                            target="_blank" rel="noopener noreferrer"
                                            class="underline underline-offset-2 hover:text-purple-200">
-                                            → 閱讀完整辨識說明文章
+                                            {{ __('→ 閱讀完整辨識說明文章') }}
                                         </a>
                                     </div>
                                     {{-- Lightbox --}}
@@ -247,7 +246,7 @@ new class extends Component
                                          @keydown.escape.window="lightbox = false"
                                          class="fixed inset-0 z-[2000] flex items-center justify-center bg-black/85 backdrop-blur-sm p-4">
                                         <img src="https://ratdar.taipei/rat-poison-demo.png"
-                                             alt="常見鼠藥外觀辨識"
+                                             alt="{{ __('常見鼠藥外觀辨識') }}"
                                              class="max-h-[80vh] max-w-full rounded-xl shadow-2xl"
                                              @click.stop>
                                         <button type="button" @click="lightbox = false"
@@ -257,13 +256,13 @@ new class extends Component
                             @endif
                         </div>
                         <div x-data="{ preview: null, setPreview(files) { const f = files?.[0]; if (!f) return; const old = this.preview; this.preview = URL.createObjectURL(f); if (old) URL.revokeObjectURL(old); } }">
-                            <label class="block text-xs font-medium text-slate-400">📸 現場照片</label>
+                            <label class="block text-xs font-medium text-slate-400">{{ __('📸 現場照片') }}</label>
                             {{-- 縮圖預覽 --}}
                             <div x-show="preview" x-cloak class="mt-2 flex items-center gap-3">
                                 <img :src="preview" alt="預覽" class="h-20 w-20 rounded-lg object-cover ring-1 ring-white/20">
                                 <button type="button"
                                         @click="preview = null"
-                                        class="text-xs text-slate-500 hover:text-slate-300">✕ 重選</button>
+                                        class="text-xs text-slate-500 hover:text-slate-300">{{ __('✕ 重選') }}</button>
                             </div>
                             <input type="file" accept="image/*"
                                    wire:model="photo"
@@ -273,29 +272,29 @@ new class extends Component
                         </div>
 
                         <div>
-                            <label class="block text-xs font-medium text-slate-400">📍 發現位置 <span class="text-slate-600">（移動地圖即可調整）</span></label>
+                            <label class="block text-xs font-medium text-slate-400">{{ __('📍 發現位置') }} <span class="text-slate-600">（{{ __('移動地圖即可調整') }}）</span></label>
                             <div wire:ignore
                                  x-data
                                  x-init="initPinMap($el, $wire)"
                                  class="mt-2 h-48 w-full overflow-hidden rounded-lg border border-white/10 bg-black/40"></div>
                             <p class="mt-1 text-[11px] text-slate-500">
                                 @if ($exifLocation && $latitude && $longitude)
-                                    📷 從照片 EXIF 取得：{{ number_format($latitude, 5) }}, {{ number_format($longitude, 5) }}（可移動地圖微調）
+                                    {{ __('📷 從照片 EXIF 取得：:coords（可移動地圖微調）', ['coords' => number_format($latitude, 5).', '.number_format($longitude, 5)]) }}
                                 @elseif ($latitude && $longitude)
-                                    已鎖定：{{ number_format($latitude, 5) }}, {{ number_format($longitude, 5) }}（可移動地圖調整）
+                                    {{ __('已鎖定：:coords（可移動地圖調整）', ['coords' => number_format($latitude, 5).', '.number_format($longitude, 5)]) }}
                                 @else
-                                    正在抓取定位…
+                                    {{ __('正在抓取定位…') }}
                                 @endif
                             </p>
                             @error('latitude') <p class="mt-1 text-xs text-red-400">{{ $message }}</p> @enderror
                         </div>
 
                         <div>
-                            <label class="block text-xs font-medium text-slate-400">📝 備註說明
-                                <span class="text-slate-600">（未上傳照片時必填，至少 20 字）</span>
+                            <label class="block text-xs font-medium text-slate-400">{{ __('📝 備註說明') }}
+                                <span class="text-slate-600">（{{ __('未上傳照片時必填，至少 20 字') }}）</span>
                             </label>
                             <textarea wire:model="description" rows="3"
-                                      placeholder="{{ $type === 'poison' ? '例如：放在公園盆栽下、花圃邊、騎樓地上…' : '例如：垃圾堆、騎樓、巷口…' }}"
+                                      placeholder="{{ $type === 'poison' ? __('例如：放在公園盆栽下、花圍邊、騎樓地上…') : __('例如：垃圾堆、騎樓、巷口…') }}"
                                       class="mt-2 w-full rounded-lg border border-white/10 bg-black/30 p-2 text-sm placeholder:text-slate-600"></textarea>
                             @error('description') <p class="mt-1 text-xs text-red-400">{{ $message }}</p> @enderror
                         </div>
@@ -306,8 +305,8 @@ new class extends Component
                                        {{ $type === 'poison'
                                            ? 'bg-purple-600 shadow-[0_0_20px_rgba(168,85,247,0.5)]'
                                            : 'bg-red-600 shadow-[0_0_20px_rgba(239,68,68,0.5)]' }}">
-                            <span wire:loading.remove>送出通報</span>
-                            <span wire:loading>⏳ 系統防衛網掃描中…</span>
+                            <span wire:loading.remove>{{ __('送出通報') }}</span>
+                            <span wire:loading>{{ __('⏳ 系統防衛網揃測中…') }}</span>
                         </button>
                     </form>
                 @endif

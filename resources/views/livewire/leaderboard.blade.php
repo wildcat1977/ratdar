@@ -28,9 +28,9 @@ new class extends Component
     {{-- 標題區 --}}
     <div class="mb-8 text-center">
         <div class="inline-flex items-center justify-center rounded-full bg-red-600/20 p-4 text-4xl">🏆</div>
-        <h1 class="mt-3 text-2xl font-bold">捕鼠英雄榜</h1>
+        <h1 class="mt-3 text-2xl font-bold">{{ __('捕鼠英雄榜') }}</h1>
         <p class="mt-1 text-sm text-slate-400">
-            全平台已核准通報 <span class="font-bold text-red-400">{{ $this->totalApproved }}</span> 筆
+            {{ __('全平台已核准通報 :count 筆', ['count' => $this->totalApproved]) }}
         </p>
     </div>
 
@@ -55,7 +55,7 @@ new class extends Component
                             <div class="mt-1 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-xl ring-2 {{ $rank === 1 ? 'ring-yellow-400' : 'ring-white/20' }}">👤</div>
                         @endif
                         <p class="mt-2 max-w-full truncate px-1 text-center text-xs font-semibold text-slate-200">{{ $user->name }}</p>
-                        <p class="text-[11px] text-red-400 font-bold">{{ $user->approved_count }} 筆</p>
+                        <p class="text-[11px] text-red-400 font-bold">{{ $user->approved_count }} {{ __('筆') }}</p>
                     </div>
                 @endif
             @endforeach
@@ -81,13 +81,13 @@ new class extends Component
                 <span class="flex-1 truncate text-sm font-medium text-slate-200">{{ $user->name }}</span>
 
                 <span class="text-sm font-bold text-red-400">{{ $user->approved_count }}</span>
-                <span class="text-xs text-slate-600">筆</span>
+                <span class="text-xs text-slate-600">{{ __('筆') }}</span>
             </div>
         @endforeach
 
         @if ($this->leaderboard->isEmpty())
             <div class="rounded-2xl bg-white/5 p-8 text-center text-slate-500">
-                還沒有核准的通報，成為第一名吧！
+                {{ __('還沒有核准的通報，成為第一名吧！') }}
             </div>
         @endif
     </div>

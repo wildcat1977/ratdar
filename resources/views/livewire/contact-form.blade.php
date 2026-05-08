@@ -77,7 +77,7 @@ new class extends Component
                 {{-- Header --}}
                 <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
                     <h2 class="text-base font-bold text-slate-800">
-                        ✉️ 聯絡管理員
+                        ✉️ {{ __('聯絡管理員') }}
                     </h2>
                     <button type="button" wire:click="close"
                             class="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
@@ -92,11 +92,11 @@ new class extends Component
                         {{-- 成功畫面 --}}
                         <div class="flex flex-col items-center gap-3 py-8 text-center">
                             <div class="text-5xl">📬</div>
-                            <p class="text-lg font-bold text-slate-800">訊息已送出！</p>
-                            <p class="text-sm text-slate-500">管理員收到後將盡快回覆您。</p>
+                            <p class="text-lg font-bold text-slate-800">{{ __('訊息已送出！') }}</p>
+                            <p class="text-sm text-slate-500">{{ __('管理員收到後將盡快回覆您。') }}</p>
                             <button type="button" wire:click="close"
                                     class="mt-2 rounded-xl bg-slate-800 px-6 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">
-                                關閉
+                                {{ __('關閉') }}
                             </button>
                         </div>
                     @else
@@ -106,10 +106,10 @@ new class extends Component
                                 {{-- 姓名 --}}
                                 <div>
                                     <label class="mb-1.5 block text-xs font-semibold text-slate-600">
-                                        姓名 <span class="text-red-500">*</span>
+                                        {{ __('姓名') }} <span class="text-red-500">*</span>
                                     </label>
                                     <input type="text" wire:model="name"
-                                           placeholder="您的稱呼"
+                                           placeholder="{{ __('您的稱呼') }}"
                                            class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800
                                                   placeholder-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200
                                                   @error('name') border-red-400 bg-red-50 @enderror">
@@ -137,10 +137,10 @@ new class extends Component
                             {{-- 主旨 --}}
                             <div>
                                 <label class="mb-1.5 block text-xs font-semibold text-slate-600">
-                                    主旨 <span class="text-red-500">*</span>
+                                    {{ __('主旨') }} <span class="text-red-500">*</span>
                                 </label>
                                 <input type="text" wire:model="subject"
-                                       placeholder="例：回報誤判 / 功能建議 / 其他問題"
+                                       placeholder="{{ __('例：回報誤判 / 功能建議 / 其他問題') }}"
                                        class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800
                                               placeholder-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200
                                               @error('subject') border-red-400 bg-red-50 @enderror">
@@ -152,10 +152,10 @@ new class extends Component
                             {{-- 訊息 --}}
                             <div>
                                 <label class="mb-1.5 block text-xs font-semibold text-slate-600">
-                                    訊息內容 <span class="text-red-500">*</span>
+                                    {{ __('訊息內容') }} <span class="text-red-500">*</span>
                                 </label>
                                 <textarea wire:model="message" rows="5"
-                                          placeholder="請詳細描述您的問題或建議…"
+                                          placeholder="{{ __('請詳細描述您的問題或建議…') }}"
                                           class="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800
                                                  placeholder-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200
                                                  @error('message') border-red-400 bg-red-50 @enderror"></textarea>
@@ -169,8 +169,8 @@ new class extends Component
                                            shadow-md transition active:scale-95 hover:bg-slate-700
                                            disabled:opacity-50"
                                     wire:loading.attr="disabled">
-                                <span wire:loading.remove>📤 送出訊息</span>
-                                <span wire:loading>傳送中…</span>
+                                <span wire:loading.remove>📤 {{ __('送出訊息') }}</span>
+                                <span wire:loading>{{ __('傳送中…') }}</span>
                             </button>
 
                         </form>

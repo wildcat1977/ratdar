@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="zh-Hant" class="dark">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     @php
-        $ogTitle = $user->name . ' 的捕鼠成就 · Rat Radar';
-        $ogDesc  = $user->name . ' 在 Rat Radar 已累積 ' . $approvedCount . ' 件核准通報，目前排名第 ' . $rank . ' 名！';
+        $ogTitle = $user->name . ' ' . __('的捕鼠成就 · Rat Radar');
+        $ogDesc  = __(':name 在 Rat Radar 已累積 :count 件核准通報，目前排名第 :rank 名！', ['name' => $user->name, 'count' => $approvedCount, 'rank' => $rank]);
         $ogImage = route('share.image', $user);
         $ogUrl   = route('share.show', $user);
     @endphp
@@ -58,28 +58,28 @@
                 @endif
                 <div>
                     <p class="text-lg font-bold text-slate-100">{{ $user->name }}</p>
-                    <p class="text-xs text-slate-500">捕鼠英雄</p>
+                    <p class="text-xs text-slate-500">{{ __('捕鼠英雄') }}</p>
                 </div>
             </div>
 
             {{-- 主數字 --}}
             <div class="mt-8 flex items-end gap-3">
                 <span class="text-7xl font-black leading-none text-red-500">{{ $approvedCount }}</span>
-                <span class="mb-2 text-base text-slate-400">件核准通報</span>
+                <span class="mb-2 text-base text-slate-400">{{ __('件核准通報') }}</span>
             </div>
 
             {{-- 副數據 --}}
             <div class="mt-4 grid grid-cols-2 gap-3">
                 <div class="rounded-xl bg-white/5 px-4 py-3">
-                    <p class="text-xs text-slate-500">總回報數</p>
+                    <p class="text-xs text-slate-500">{{ __('總回報數') }}</p>
                     <p class="mt-1 text-xl font-bold text-slate-200">{{ $totalCount }}</p>
                 </div>
                 <div class="rounded-xl bg-white/5 px-4 py-3">
-                    <p class="text-xs text-slate-500">目前排名</p>
+                    <p class="text-xs text-slate-500">{{ __('目前排名') }}</p>
                     <p class="mt-1 text-xl font-bold
                         {{ $rank <= 3 ? 'text-yellow-400' : 'text-slate-200' }}">
                         @if ($rank === 1) 🥇 @elseif ($rank === 2) 🥈 @elseif ($rank === 3) 🥉 @endif
-                        第 {{ $rank }} 名
+                        {{ __('第 :rank 名', ['rank' => $rank]) }}
                     </p>
                 </div>
             </div>
@@ -91,23 +91,23 @@
             <a href="{{ route('leaderboard') }}"
                class="block w-full rounded-xl bg-red-600 py-3 text-center text-sm font-semibold
                       text-white hover:bg-red-500 transition-colors">
-                查看英雄榜
+                {{ __('查看英雄榜') }}
             </a>
             <a href="{{ route('home') }}"
                class="block w-full rounded-xl bg-white/5 py-3 text-center text-sm text-slate-400
                       hover:bg-white/10 transition-colors ring-1 ring-white/10">
-                前往通報老鼠
+                {{ __('前往通報老鼠') }}
             </a>
         </div>
     </div>
 
     {{-- 下方 OG 預覽圖說明 --}}
     <div class="mt-6 text-center text-xs text-slate-600">
-        <p>分享此頁面將自動產生成就卡預覽圖</p>
+        <p>{{ __('分享此頁面將自動產生成就卡預覽圖') }}</p>
         <a href="{{ route('share.image', $user) }}"
            target="_blank"
            class="mt-1 inline-block underline underline-offset-2 hover:text-slate-400">
-            查看成就卡圖片
+            {{ __('查看成就卡圖片') }}
         </a>
     </div>
 
