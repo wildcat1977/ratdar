@@ -25,13 +25,11 @@
         ? round($avgHrs / 24, 1) . ' 天'
         : $avgHrs . ' 小時';
 
-    {{--
-    ╔════════════════════════════════════════════════════════╗
-    ║  奇葩退件大賞 · 可在此手動填入圖片與說明文字            ║
-    ║  src：上傳圖片到 public/storage/transparency/ 目錄      ║
-    ║       後再填入 /storage/transparency/xxx.jpg           ║
-    ╚════════════════════════════════════════════════════════╝
-    --}}
+    /*
+     * 奇葩退件大賞 - 可在此手動填入圖片與說明文字
+     * src: 上傳圖片到 storage/app/public/transparency/ 目錄
+     *      再填入 /storage/transparency/xxx.jpg
+     */
     $funnyRejections = [
         // 取消下方的 // 即可啟用，圖片請先上傳到 storage/app/public/transparency/
         // ['src' => '/storage/transparency/ratatouille.jpg', 'caption' => '料理鼠王本人申請通報，AI 以「影像主角非實際鼠蹤」為由攔截'],
