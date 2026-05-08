@@ -5,6 +5,8 @@ use App\Http\Controllers\GmailAuthController;
 use App\Http\Controllers\ShareController;
 use App\Http\Middleware\SetLocale;
 use App\Models\Report;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
@@ -81,6 +83,35 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::view('/leaderboard', 'pages.leaderboard')->name('leaderboard');
+
+Route::get('/transparency', function () {
+    $stats = Cache::remember('transparency.stats', 3600, function () {
+        $rejectionBreakdown = DB::table('reports')
+            ->where('status', 'rejected')
+            ->whereNotNull('rejection_reason')
+            ->selectRaw('rejection_reason, COUNT(*) as c')
+            ->groupBy('rejection_reason')
+            ->orderByDesc('c')
+            ->pluck('c', 'rejection_reason');
+
+        return [
+            'total' => Report::count(),
+            'approved' => Report::where('status', Report::STATUS_APPROVED)->count(),
+            'pending' => Report::where('status', Report::STATUS_PENDING)->count(),
+            'rejected' => Report::where('status', Report::STATUS_REJECTED)->count(),
+            'reported_1999' => Report::where('status', Report::STATUS_REPORTED_1999)->count(),
+            'resolved' => Report::where('status', Report::STATUS_RESOLVED)->count(),
+            'ai_auto' => (int) ($rejectionBreakdown['ai_auto'] ?? 0),
+            'avg_review_hrs' => (float) (DB::table('reports')
+                ->whereNotNull('reviewed_at')
+                ->selectRaw('AVG(EXTRACT(EPOCH FROM (reviewed_at - created_at))/3600)')
+                ->value('avg') ?? 0),
+            'rejection_breakdown' => $rejectionBreakdown,
+        ];
+    });
+
+    return view('pages.transparency', compact('stats'));
+})->name('transparency');
 
 Route::get('/share/{user}', [ShareController::class, 'show'])->name('share.show');
 Route::get('/share/{user}/og.jpg', [ShareController::class, 'image'])->name('share.image');
