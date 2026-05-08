@@ -7,7 +7,7 @@
     use App\Models\Report;
 
     $rejectionLabels = Report::REJECTION_REASONS;
-    $maxCount = $stats['rejection_breakdown']->max() ?: 1;
+    $maxCount = count($stats['rejection_breakdown']) > 0 ? max($stats['rejection_breakdown']) : 1;
 
     $publicTotal = $stats['approved'] + $stats['reported_1999'] + $stats['resolved'];
     $approvalRate = $stats['total'] > 0

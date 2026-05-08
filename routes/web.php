@@ -92,7 +92,8 @@ Route::get('/transparency', function () {
             ->selectRaw('rejection_reason, COUNT(*) as c')
             ->groupBy('rejection_reason')
             ->orderByDesc('c')
-            ->pluck('c', 'rejection_reason');
+            ->pluck('c', 'rejection_reason')
+            ->all(); // plain array to avoid Collection serialization issues
 
         return [
             'total' => Report::count(),
@@ -104,8 +105,8 @@ Route::get('/transparency', function () {
             'ai_auto' => (int) ($rejectionBreakdown['ai_auto'] ?? 0),
             'avg_review_hrs' => (float) (DB::table('reports')
                 ->whereNotNull('reviewed_at')
-                ->selectRaw('AVG(EXTRACT(EPOCH FROM (reviewed_at - created_at))/3600)')
-                ->value('avg') ?? 0),
+                ->selectRaw('AVG(EXTRACT(EPOCH FROM (reviewed_at - created_at))/3600) AS avg_hrs')
+                ->value('avg_hrs') ?? 0),
             'rejection_breakdown' => $rejectionBreakdown,
         ];
     });
