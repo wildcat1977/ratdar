@@ -145,9 +145,9 @@ const POISON_MARKER_STYLE = {
 };
 
 const STATUS_LABEL = {
-    approved:      '🔴 已回報',
-    reported_1999: '🟡 已通報 1999',
-    resolved:      '🟢 已處理完畢',
+    approved:      window.i18n?.statusApproved ?? '🔴 已回報',
+    reported_1999: window.i18n?.statusReported1999 ?? '🟡 已通報 1999',
+    resolved:      window.i18n?.statusResolved ?? '🟢 已處理完畢',
 };
 
 function markerStyle(status) {
@@ -161,7 +161,7 @@ function createPopupEl(m) {
     if (m.img) {
         const img = document.createElement('img');
         img.src = m.img;
-        img.alt = '回報照片';
+        img.alt = window.i18n?.reportPhoto ?? '回報照片';
         img.style.cssText = 'width:100%;height:180px;object-fit:cover;border-radius:6px;margin-bottom:8px;display:block;cursor:pointer';
         img.addEventListener('click', () => window.open(m.img, '_blank'));
         wrap.appendChild(img);
@@ -170,7 +170,7 @@ function createPopupEl(m) {
     const statusEl = document.createElement('div');
     statusEl.style.cssText = 'margin-bottom:4px;font-weight:600;font-size:12px';
     if (m.type === 'poison') {
-        statusEl.textContent = '☠️ 毒餌通報';
+        statusEl.textContent = window.i18n?.poisonReport ?? '☠️ 毒餌通報';
         statusEl.style.color = '#a855f7';
     } else {
         statusEl.textContent = STATUS_LABEL[m.status] ?? STATUS_LABEL.approved;
@@ -338,8 +338,8 @@ function initRadar() {
 
     // 圖層切換控制（右上）
     const overlayMaps = {
-        '🐀 鼠蹤熱區':   heatLayer,
-        '☠️ 毒餌分佈': poisonLayer,
+        [window.i18n?.ratLayerLabel ?? '🐀 鼠蹤熱區']:   heatLayer,
+        [window.i18n?.poisonLayerLabel ?? '☠️ 毒餌分佈']: poisonLayer,
     };
     L.control.layers(null, overlayMaps, { position: 'topright', collapsed: false }).addTo(radarMap);
 
@@ -363,7 +363,7 @@ function initRadar() {
     createGeocoder({
         defaultMarkGeocode: false,
         collapsed: true,
-        placeholder: '搜尋地標或路名…(尚不支援詳細地址)',
+        placeholder: window.i18n?.searchPlaceholderRadar ?? '搜尋地標或路名…(尚不支援詳細地址)',
         position: 'topleft',
         geocoder: geocoders.nominatim({
             serviceUrl: 'https://nominatim.openstreetmap.org/',
@@ -437,7 +437,7 @@ window.initPinMap = function (el, wire) {
     createGeocoder({
         defaultMarkGeocode: false,
         collapsed: true,
-        placeholder: '搜尋地標或路名…(暫不支援門牌號碼)',
+        placeholder: window.i18n?.searchPlaceholderPin ?? '搜尋地標或路名…(暫不支援門牌號碼)',
         geocoder: geocoders.nominatim({ serviceUrl: 'https://nominatim.openstreetmap.org/', geocodingQueryParams: { countrycodes: 'tw', limit: 5 } }),
     })
     .on('markgeocode', (e) => {
@@ -451,22 +451,22 @@ window.initPinMap = function (el, wire) {
         options: { position: 'bottomright' },
         onAdd() {
             const btn = L.DomUtil.create('button', '');
-            btn.innerHTML = '📍 我的位置';
-            btn.title = '取得目前 GPS 位置';
+            btn.innerHTML = window.i18n?.myLocation ?? '📍 我的位置';
+            btn.title = window.i18n?.getGPS ?? '取得目前 GPS 位置';
             btn.style.cssText = 'padding:5px 10px;font-size:12px;cursor:pointer;background:#fff;color:#1e293b;border:1px solid rgba(0,0,0,0.2);border-radius:6px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,0.12);';
             L.DomEvent.on(btn, 'click', (ev) => {
                 L.DomEvent.stopPropagation(ev);
                 if (!navigator.geolocation) return;
-                btn.textContent = '定位中…';
+                btn.textContent = window.i18n?.locating ?? '定位中…';
                 btn.disabled = true;
                 navigator.geolocation.getCurrentPosition(
                     (pos) => {
                         setPos(pos.coords.latitude, pos.coords.longitude);
-                        btn.innerHTML = '📍 我的位置';
+                        btn.innerHTML = window.i18n?.myLocation ?? '📍 我的位置';
                         btn.disabled = false;
                     },
                     () => {
-                        btn.innerHTML = '📍 我的位置';
+                        btn.innerHTML = window.i18n?.myLocation ?? '📍 我的位置';
                         btn.disabled = false;
                     },
                     { enableHighAccuracy: true, timeout: 8000 }

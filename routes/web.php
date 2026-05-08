@@ -3,10 +3,18 @@
 use App\Http\Controllers\Auth\SocialiteController;
 use App\Http\Controllers\GmailAuthController;
 use App\Http\Controllers\ShareController;
+use App\Http\Middleware\SetLocale;
 use App\Models\Report;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+
+Route::get('/locale/{locale}', function (string $locale) {
+    if (in_array($locale, SetLocale::SUPPORTED, true)) {
+        session(['locale' => $locale]);
+    }
+
+    return redirect()->back();
+})->name('locale.set');
 
 Route::view('/', 'pages.radar')->name('home');
 
@@ -20,22 +28,22 @@ Route::get('/reports/export', function () {
         ->get();
 
     $statusLabels = [
-        Report::STATUS_PENDING       => '待審核',
-        Report::STATUS_APPROVED      => '已審核',
+        Report::STATUS_PENDING => '待審核',
+        Report::STATUS_APPROVED => '已審核',
         Report::STATUS_REPORTED_1999 => '已通報1999',
-        Report::STATUS_RESOLVED      => '已處理',
+        Report::STATUS_RESOLVED => '已處理',
     ];
 
     $typeLabels = [
-        Report::TYPE_RAT    => '鼠蹤',
+        Report::TYPE_RAT => '鼠蹤',
         Report::TYPE_POISON => '毒餌',
     ];
 
-    $filename = '鼠蹤通報清單_' . now()->format('Ymd_His') . '.csv';
+    $filename = '鼠蹤通報清單_'.now()->format('Ymd_His').'.csv';
 
     $headers = [
-        'Content-Type'        => 'text/csv; charset=UTF-8',
-        'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        'Content-Type' => 'text/csv; charset=UTF-8',
+        'Content-Disposition' => 'attachment; filename="'.$filename.'"',
     ];
 
     $callback = function () use ($reports, $statusLabels, $typeLabels) {
@@ -81,6 +89,7 @@ Route::post('/logout', function () {
     auth()->logout();
     request()->session()->invalidate();
     request()->session()->regenerateToken();
+
     return redirect()->route('home');
 })->name('logout');
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-Hant" class="dark">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
@@ -25,6 +25,23 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" crossorigin="">
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" crossorigin="">
 
+    {{-- i18n for JavaScript --}}
+    <script>
+        window.i18n = {
+            statusApproved:         @js(__('🔴 已回報')),
+            statusReported1999:     @js(__('🟡 已通報 1999')),
+            statusResolved:         @js(__('🟢 已處理完畢')),
+            poisonReport:           @js(__('☠️ 毒餌通報')),
+            reportPhoto:            @js(__('回報照片')),
+            searchPlaceholderRadar: @js(__('搜尋地標或路名…(尚不支援詳細地址)')),
+            searchPlaceholderPin:   @js(__('搜尋地標或路名…(暫不支援門牌號碼)')),
+            myLocation:             @js(__('📍 我的位置')),
+            getGPS:                 @js(__('取得目前 GPS 位置')),
+            locating:               @js(__('定位中…')),
+            ratLayerLabel:          @js(__('🐀 鼠蹤熱區')),
+            poisonLayerLabel:       @js(__('☠️ 毒餌分佈')),
+        };
+    </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 
