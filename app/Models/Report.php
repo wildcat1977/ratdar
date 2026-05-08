@@ -13,18 +13,25 @@ class Report extends Model
 {
     /** @use HasFactory<ReportFactory> */
     use HasFactory;
-    public const STATUS_PENDING       = 'pending';
-    public const STATUS_APPROVED      = 'approved';
-    public const STATUS_REJECTED      = 'rejected';
+
+    public const STATUS_PENDING = 'pending';
+
+    public const STATUS_APPROVED = 'approved';
+
+    public const STATUS_REJECTED = 'rejected';
+
     public const STATUS_REPORTED_1999 = 'reported_1999';
-    public const STATUS_RESOLVED      = 'resolved';
+
+    public const STATUS_RESOLVED = 'resolved';
 
     /** 通報類型 */
-    public const TYPE_RAT    = 'rat';     // 發現鼠蹤
+    public const TYPE_RAT = 'rat';     // 發現鼠蹤
+
     public const TYPE_POISON = 'poison';  // 發現毒餌 / 老鼠藥
 
     /** 預設座標（未提供位置授權時使用） */
-    public const DEFAULT_LATITUDE  = 25.0330000;
+    public const DEFAULT_LATITUDE = 25.0330000;
+
     public const DEFAULT_LONGITUDE = 121.5654000;
 
     public const TYPES = [
@@ -34,13 +41,14 @@ class Report extends Model
 
     /** 拒絕原因列表（key 儲存於 DB，value 顯示用） */
     public const REJECTION_REASONS = [
-        'duplicate'      => '重複通報（鄰近已有相同回報）',
-        'outdated'       => '資訊過時（時間過長）',
-        'invalid_image'  => '照片不符（無法驗證鼠蹤／毒餌）',
+        'ai_auto' => 'AI 自動審核攔截（圖片不符通報規範）',
+        'duplicate' => '重複通報（鄰近已有相同回報）',
+        'outdated' => '資訊過時（時間過長）',
+        'invalid_image' => '照片不符（無法驗證鼠蹤／毒餌）',
         'wrong_location' => '位置異常（座標不合理）',
-        'insufficient'   => '資料過少無法驗證，煩請補充地點資訊或照片後再次回報',
-        'spam'           => '不實／惡意通報',
-        'other'          => '其他',
+        'insufficient' => '資料過少無法驗證，煩請補充地點資訊或照片後再次回報',
+        'spam' => '不實／惡意通報',
+        'other' => '其他',
     ];
 
     /** 地圖上可公開顯示的狀態（除 pending/rejected 以外皆顯示） */
@@ -66,15 +74,15 @@ class Report extends Model
     protected function casts(): array
     {
         return [
-            'latitude'    => 'decimal:7',
-            'longitude'   => 'decimal:7',
+            'latitude' => 'decimal:7',
+            'longitude' => 'decimal:7',
             'reviewed_at' => 'datetime',
         ];
     }
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\User::class);
+        return $this->belongsTo(User::class);
     }
 
     /** 同一使用者的所有回報（自我關聯，供 withCount 使用） */

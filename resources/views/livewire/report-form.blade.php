@@ -134,14 +134,15 @@ new class extends Component
         }
 
         Report::create([
-            'user_id'     => Auth::id(),
-            'type'        => $this->type,
-            'latitude'    => $this->latitude,
-            'longitude'   => $this->longitude,
-            'address'     => $this->address ?: null,
-            'image_path'  => $filename,
-            'description' => $this->description ?: null,
-            'status'      => $status,
+            'user_id'          => Auth::id(),
+            'type'             => $this->type,
+            'latitude'         => $this->latitude,
+            'longitude'        => $this->longitude,
+            'address'          => $this->address ?: null,
+            'image_path'       => $filename,
+            'description'      => $this->description ?: null,
+            'status'           => $status,
+            'rejection_reason' => $hardReject ? 'ai_auto' : null,
         ]);
 
         if ($this->photo && isset($moderation) && $hardReject) {
