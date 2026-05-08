@@ -54,6 +54,20 @@
             <span class="ml-2 text-amber-500">⚠ 附近 300m 內有 {{ count($nearbyReports) }} 筆相關通報（圓點標示）</span>
         @endif
     </p>
+    <div class="mt-1 text-xs flex gap-3">
+        <a
+            :href="'https://www.google.com/maps?q=' + currentLat + ',' + currentLng"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-1 text-primary-500 hover:text-primary-700 underline"
+        >🗺 Google 地圖</a>
+        <a
+            :href="'https://www.google.com/maps?q=&layer=c&cbll=' + currentLat + ',' + currentLng"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-1 text-primary-500 hover:text-primary-700 underline"
+        >📷 街景</a>
+    </div>
 </div>
 
 <script>
@@ -61,6 +75,8 @@ function mapPickerInit_{{ $record?->id ?? 0 }}() {
     return {
         map: null,
         marker: null,
+        currentLat: {{ $lat }},
+        currentLng: {{ $lng }},
         init() {
             const tryInit = () => {
                 if (typeof L === 'undefined') { setTimeout(tryInit, 100); return; }
@@ -81,6 +97,8 @@ function mapPickerInit_{{ $record?->id ?? 0 }}() {
                     const ll = this.marker.getLatLng();
                     const lat = parseFloat(ll.lat.toFixed(7));
                     const lng = parseFloat(ll.lng.toFixed(7));
+                    this.currentLat = lat;
+                    this.currentLng = lng;
                     this.$wire.set('data.latitude',  lat);
                     this.$wire.set('data.longitude', lng);
                 });
