@@ -147,7 +147,8 @@
                      points:   {{ Js::from($stats['map_points']) }},
                      minTs:    {{ $mapPointsMin }},
                      maxTs:    {{ $mapPointsMax }},
-                     cutoffTs: {{ $mapPointsMax }},
+                     startTs:  {{ $mapPointsMin }},
+                     endTs:    {{ $mapPointsMax }},
                      playing:  false,
                      playTimer: null,
                      map: null,
@@ -160,9 +161,9 @@
                          });
                      },
 
-                     sliderPct() {
+                     pct(ts) {
                          if (this.maxTs === this.minTs) return 100;
-                         return Math.round((this.cutoffTs - this.minTs) / (this.maxTs - this.minTs) * 100);
+                         return Math.round((ts - this.minTs) / (this.maxTs - this.minTs) * 100);
                      },
 
                      initMap() {
@@ -172,17 +173,16 @@
                          L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
                              subdomains: 'abcd', maxZoom: 20,
                          }).addTo(this.map);
-                         // 強制 Leaflet 重算容器尺寸（大容器需要）
                          setTimeout(() => { this.map.invalidateSize(); this.renderPoints(); }, 50);
                      },
 
                      renderPoints() {
                          this.layers.forEach(l => l.remove());
                          this.layers = [];
-                         const range = this.maxTs - this.minTs || 1;
+                         const range = this.endTs - this.startTs || 1;
                          this.points.forEach(([lat, lng, type, ts]) => {
-                             if (ts > this.cutoffTs) return;
-                             const age = (ts - this.minTs) / range;
+                             if (ts < this.startTs || ts > this.endTs) return;
+                             const age = (ts - this.startTs) / range;
                              const alpha = 0.15 + age * 0.85;
                              const color = type === 'poison'
                                  ? `rgba(167,139,250,${alpha.toFixed(2)})`
@@ -199,9 +199,15 @@
                          });
                      },
 
-                     onSlider(e) {
-                         const pct = e.target.value / 100;
-                         this.cutoffTs = Math.round(this.minTs + pct * (this.maxTs - this.minTs));
+                     onStartSlider(e) {
+                         const ts = Math.round(this.minTs + (e.target.value / 100) * (this.maxTs - this.minTs));
+                         this.startTs = Math.min(ts, this.endTs);
+                         this.renderPoints();
+                     },
+
+                     onEndSlider(e) {
+                         const ts = Math.round(this.minTs + (e.target.value / 100) * (this.maxTs - this.minTs));
+                         this.endTs = Math.max(ts, this.startTs);
                          this.renderPoints();
                      },
 
@@ -211,16 +217,16 @@
                              this.playing = false;
                              return;
                          }
-                         if (this.cutoffTs >= this.maxTs) {
-                             this.cutoffTs = this.minTs;
+                         if (this.endTs >= this.maxTs) {
+                             this.endTs = this.startTs;
                              this.renderPoints();
                          }
-                         const step = Math.round((this.maxTs - this.minTs) / 80);
+                         const step = Math.round((this.maxTs - this.startTs) / 80) || 1;
                          this.playing = true;
                          this.playTimer = setInterval(() => {
-                             this.cutoffTs = Math.min(this.cutoffTs + step, this.maxTs);
+                             this.endTs = Math.min(this.endTs + step, this.maxTs);
                              this.renderPoints();
-                             if (this.cutoffTs >= this.maxTs) {
+                             if (this.endTs >= this.maxTs) {
                                  clearInterval(this.playTimer);
                                  this.playing = false;
                              }
@@ -230,7 +236,8 @@
                      reset() {
                          clearInterval(this.playTimer);
                          this.playing = false;
-                         this.cutoffTs = this.maxTs;
+                         this.startTs = this.minTs;
+                         this.endTs   = this.maxTs;
                          this.renderPoints();
                      },
                  }"
@@ -242,19 +249,38 @@
                 <div x-ref="mapel" class="h-[60vh] min-h-96 w-full"></div>
 
                 {{-- 控制列 --}}
-                <div class="space-y-3 px-5 py-5">
-                    <div class="flex items-center justify-between text-xs text-slate-400">
-                        <span x-text="tsToLabel(minTs)"></span>
-                        <span class="rounded bg-white/10 px-2 py-0.5 font-medium text-orange-300"
-                              x-text="'顯示至 ' + tsToLabel(cutoffTs)"></span>
-                        <span x-text="tsToLabel(maxTs)"></span>
+                <div class="space-y-4 px-5 py-5">
+
+                    {{-- 雙滑桿：起始 + 結束 --}}
+                    <div class="space-y-2">
+                        {{-- 視覺軌道（顯示選取區間） --}}
+                        <div class="relative h-2 rounded-full bg-white/10">
+                            <div class="absolute h-full rounded-full bg-orange-400/50"
+                                 :style="'left:' + pct(startTs) + '%; right:' + (100 - pct(endTs)) + '%'"></div>
+                        </div>
+
+                        {{-- 起始時間拉桿 --}}
+                        <div class="flex items-center gap-3">
+                            <span class="w-8 shrink-0 text-right text-xs text-slate-500">起</span>
+                            <input type="range" min="0" max="100" step="1"
+                                   :value="pct(startTs)"
+                                   @input="onStartSlider($event)"
+                                   class="w-full cursor-pointer accent-orange-400">
+                            <span class="w-36 shrink-0 text-xs text-slate-400" x-text="tsToLabel(startTs)"></span>
+                        </div>
+
+                        {{-- 結束時間拉桿 --}}
+                        <div class="flex items-center gap-3">
+                            <span class="w-8 shrink-0 text-right text-xs text-slate-500">迄</span>
+                            <input type="range" min="0" max="100" step="1"
+                                   :value="pct(endTs)"
+                                   @input="onEndSlider($event)"
+                                   class="w-full cursor-pointer accent-orange-400">
+                            <span class="w-36 shrink-0 text-xs text-orange-300" x-text="tsToLabel(endTs)"></span>
+                        </div>
                     </div>
 
-                    <input type="range" min="0" max="100"
-                           :value="sliderPct()"
-                           @input="onSlider($event)"
-                           class="w-full cursor-pointer accent-orange-400">
-
+                    {{-- 按鈕列 --}}
                     <div class="flex items-center gap-3">
                         <button @click="togglePlay()"
                                 class="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300 hover:bg-white/10">
