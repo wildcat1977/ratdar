@@ -253,6 +253,148 @@
             @endif
         </section>
 
+        {{-- ── 地理時間軸地圖 ── --}}
+        @if (count($stats['map_points']) > 0)
+        @php
+            $mapPointsMin = min(array_column($stats['map_points'], 3));
+            $mapPointsMax = max(array_column($stats['map_points'], 3));
+        @endphp
+        <section class="mb-12"
+                 x-data="{
+                     points:   {{ Js::from($stats['map_points']) }},
+                     minTs:    {{ $mapPointsMin }},
+                     maxTs:    {{ $mapPointsMax }},
+                     cutoffTs: {{ $mapPointsMax }},
+                     playing:  false,
+                     playTimer: null,
+                     map: null,
+                     layers: [],
+
+                     tsToLabel(ts) {
+                         return new Date(ts * 1000).toLocaleDateString('zh-TW', {
+                             month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit',
+                         });
+                     },
+
+                     sliderPct() {
+                         if (this.maxTs === this.minTs) return 100;
+                         return Math.round((this.cutoffTs - this.minTs) / (this.maxTs - this.minTs) * 100);
+                     },
+
+                     initMap() {
+                         if (this.map) return;
+                         this.map = L.map(this.$refs.mapel, { zoomControl: true, attributionControl: false })
+                             .setView([25.045, 121.54], 12);
+                         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                             subdomains: 'abcd', maxZoom: 20,
+                         }).addTo(this.map);
+                         this.renderPoints();
+                     },
+
+                     renderPoints() {
+                         // 清除舊 layer
+                         this.layers.forEach(l => l.remove());
+                         this.layers = [];
+
+                         const range = this.maxTs - this.minTs || 1;
+                         this.points.forEach(([lat, lng, type, ts]) => {
+                             if (ts > this.cutoffTs) return;
+                             // age 0 = 最舊, 1 = 最新
+                             const age = (ts - this.minTs) / range;
+                             const alpha = 0.15 + age * 0.85;
+                             const color = type === 'poison' ? `rgba(167,139,250,${alpha.toFixed(2)})` : `rgba(251,146,60,${alpha.toFixed(2)})`;
+                             const circle = L.circleMarker([lat, lng], {
+                                 radius: 5,
+                                 color,
+                                 fillColor: color,
+                                 fillOpacity: alpha,
+                                 weight: 0,
+                             });
+                             circle.addTo(this.map);
+                             this.layers.push(circle);
+                         });
+                     },
+
+                     onSlider(e) {
+                         const pct = e.target.value / 100;
+                         this.cutoffTs = Math.round(this.minTs + pct * (this.maxTs - this.minTs));
+                         this.renderPoints();
+                     },
+
+                     togglePlay() {
+                         if (this.playing) {
+                             clearInterval(this.playTimer);
+                             this.playing = false;
+                             return;
+                         }
+                         // 若已在最大值，從頭開始
+                         if (this.cutoffTs >= this.maxTs) {
+                             this.cutoffTs = this.minTs;
+                             this.renderPoints();
+                         }
+                         const step = Math.round((this.maxTs - this.minTs) / 80);
+                         this.playing = true;
+                         this.playTimer = setInterval(() => {
+                             this.cutoffTs = Math.min(this.cutoffTs + step, this.maxTs);
+                             this.renderPoints();
+                             if (this.cutoffTs >= this.maxTs) {
+                                 clearInterval(this.playTimer);
+                                 this.playing = false;
+                             }
+                         }, 120);
+                     },
+
+                     reset() {
+                         clearInterval(this.playTimer);
+                         this.playing = false;
+                         this.cutoffTs = this.maxTs;
+                         this.renderPoints();
+                     },
+                 }"
+                 x-init="$nextTick(() => initMap())">
+            <h2 class="mb-5 text-lg font-semibold text-slate-300">🗺️ 鼠蹤擴散時間軸</h2>
+            <div class="overflow-hidden rounded-xl border border-white/10 bg-white/5">
+
+                {{-- 地圖 --}}
+                <div x-ref="mapel" class="h-80 w-full"></div>
+
+                {{-- 控制列 --}}
+                <div class="space-y-3 px-4 py-4">
+                    {{-- 時間標籤 --}}
+                    <div class="flex items-center justify-between text-xs text-slate-400">
+                        <span x-text="tsToLabel(minTs)"></span>
+                        <span class="rounded bg-white/10 px-2 py-0.5 text-orange-300 font-medium"
+                              x-text="'顯示至 ' + tsToLabel(cutoffTs)"></span>
+                        <span x-text="tsToLabel(maxTs)"></span>
+                    </div>
+
+                    {{-- 滑桿 --}}
+                    <input type="range" min="0" max="100"
+                           :value="sliderPct()"
+                           @input="onSlider($event)"
+                           class="w-full accent-orange-400 cursor-pointer">
+
+                    {{-- 按鈕列 --}}
+                    <div class="flex items-center gap-3">
+                        <button @click="togglePlay()"
+                                class="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300 hover:bg-white/10">
+                            <span x-text="playing ? '⏹ 停止' : '▶ 播放'"></span>
+                        </button>
+                        <button @click="reset()"
+                                class="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-400 hover:bg-white/10">
+                            ↺ 重置
+                        </button>
+                        <div class="ml-auto flex items-center gap-3 text-xs text-slate-500">
+                            <span><span class="inline-block h-2.5 w-2.5 rounded-full bg-orange-400 mr-1"></span>鼠蹤</span>
+                            <span><span class="inline-block h-2.5 w-2.5 rounded-full bg-violet-400 mr-1"></span>毒餌</span>
+                            <span class="text-slate-600">越亮 = 越近期</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        @endif
+
         {{-- ── 退件原因分析 ── --}}
         <section class="mb-12">
             <h2 class="mb-5 text-lg font-semibold text-slate-300">❌ 退件原因分析</h2>

@@ -116,6 +116,16 @@ Route::get('/transparency', function () {
             ->values()
             ->all();
 
+        // 地圖散點資料：已公開的通報（lat/lng/type/timestamp），用於時間軸地圖
+        $mapPoints = DB::table('reports')
+            ->whereIn('status', ['approved', 'reported_1999', 'resolved'])
+            ->selectRaw('latitude::float AS lat, longitude::float AS lng, type, EXTRACT(EPOCH FROM created_at)::int AS ts')
+            ->orderBy('created_at')
+            ->get()
+            ->map(fn ($r) => [(float) $r->lat, (float) $r->lng, $r->type, (int) $r->ts])
+            ->values()
+            ->all();
+
         return [
             'total' => Report::count(),
             'approved' => Report::where('status', Report::STATUS_APPROVED)->count(),
@@ -131,6 +141,7 @@ Route::get('/transparency', function () {
             'rejection_breakdown' => $rejectionBreakdown,
             'weekly' => $weekly,
             'daily' => $daily,
+            'map_points' => $mapPoints,
         ];
     });
 
