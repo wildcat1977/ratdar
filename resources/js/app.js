@@ -3,9 +3,16 @@ import 'leaflet.heat';
 import 'leaflet.markercluster';
 import { geocoder as createGeocoder, geocoders } from 'leaflet-control-geocoder';
 import exifr from 'exifr';
-import { Chart, ArcElement, Tooltip, Legend, PieController } from 'chart.js';
+import {
+    Chart,
+    ArcElement, Tooltip, Legend, PieController,
+    CategoryScale, LinearScale, BarElement, BarController,
+} from 'chart.js';
 
-Chart.register(ArcElement, Tooltip, Legend, PieController);
+Chart.register(
+    ArcElement, Tooltip, Legend, PieController,
+    CategoryScale, LinearScale, BarElement, BarController,
+);
 window.Chart = Chart;
 
 // 讓 Alpine x-init inline 可以直接用 window.L

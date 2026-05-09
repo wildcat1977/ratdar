@@ -147,6 +147,7 @@
                      daily:  {{ Js::from($stats['daily']) }},
                      init() {
                          this.$nextTick(() => this.buildChart('weekly'));
+                         this.$watch('$destroy', () => { if (this.chart) { this.chart.destroy(); this.chart = null; } });
                      },
                      buildChart(mode) {
                          const data = mode === 'weekly' ? this.weekly : this.daily;
