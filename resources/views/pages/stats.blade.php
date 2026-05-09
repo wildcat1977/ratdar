@@ -188,7 +188,8 @@
                          L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
                              subdomains: 'abcd', maxZoom: 20,
                          }).addTo(this.map);
-                         this.renderPoints();
+                         // 強制 Leaflet 重算容器尺寸（大容器需要）
+                         setTimeout(() => { this.map.invalidateSize(); this.renderPoints(); }, 50);
                      },
 
                      renderPoints() {

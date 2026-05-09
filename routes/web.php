@@ -95,11 +95,11 @@ Route::get('/transparency', function () {
             ->pluck('c', 'rejection_reason')
             ->all(); // plain array to avoid Collection serialization issues
 
-        // 週統計：每週 ISO 起始日 + 通報總數
+        // 週統計：每週 ISO 起始日 + 通報總數（created_at 已是台北時間，直接使用）
         $weekly = DB::table('reports')
-            ->selectRaw("TO_CHAR(DATE_TRUNC('week', created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Taipei'), 'YYYY-MM-DD') AS label, COUNT(*) AS total")
-            ->groupByRaw("DATE_TRUNC('week', created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Taipei')")
-            ->orderByRaw("DATE_TRUNC('week', created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Taipei')")
+            ->selectRaw("TO_CHAR(DATE_TRUNC('week', created_at), 'YYYY-MM-DD') AS label, COUNT(*) AS total")
+            ->groupByRaw("DATE_TRUNC('week', created_at)")
+            ->orderByRaw("DATE_TRUNC('week', created_at)")
             ->get()
             ->map(fn ($r) => ['label' => $r->label, 'total' => (int) $r->total])
             ->values()
@@ -107,19 +107,19 @@ Route::get('/transparency', function () {
 
         // 日統計：近 90 天每日通報數
         $daily = DB::table('reports')
-            ->selectRaw("TO_CHAR((created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Taipei')::date, 'YYYY-MM-DD') AS label, COUNT(*) AS total")
+            ->selectRaw("TO_CHAR(created_at::date, 'YYYY-MM-DD') AS label, COUNT(*) AS total")
             ->where('created_at', '>=', now()->subDays(90))
-            ->groupByRaw("(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Taipei')::date")
-            ->orderByRaw("(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Taipei')::date")
+            ->groupByRaw('created_at::date')
+            ->orderByRaw('created_at::date')
             ->get()
             ->map(fn ($r) => ['label' => $r->label, 'total' => (int) $r->total])
             ->values()
             ->all();
 
-        // 地圖散點資料：已公開的通報（lat/lng/type/timestamp），用於時間軸地圖
+        // 地圖散點資料：epoch 需告知 PG「此值是台北時間」才能取到正確 UTC epoch
         $mapPoints = DB::table('reports')
             ->whereIn('status', ['approved', 'reported_1999', 'resolved'])
-            ->selectRaw('latitude::float AS lat, longitude::float AS lng, type, EXTRACT(EPOCH FROM created_at)::int AS ts')
+            ->selectRaw("latitude::float AS lat, longitude::float AS lng, type, EXTRACT(EPOCH FROM (created_at AT TIME ZONE 'Asia/Taipei'))::int AS ts")
             ->orderBy('created_at')
             ->get()
             ->map(fn ($r) => [(float) $r->lat, (float) $r->lng, $r->type, (int) $r->ts])
