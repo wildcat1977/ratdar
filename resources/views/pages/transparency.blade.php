@@ -32,11 +32,15 @@
      */
     $funnyRejections = [
         // 取消下方的 // 即可啟用，圖片請先上傳到 storage/app/public/transparency/
-        // ['src' => '/storage/transparency/ratatouille.jpg', 'caption' => '料理鼠王本人申請通報，AI 以「影像主角非實際鼠蹤」為由攔截'],
-        // ['src' => '/storage/transparency/mickey.jpg',      'caption' => '米老鼠試圖用卡通截圖闖關，信心度 99.9%'],
+        ['src' => '/storage/transparency/b9ed4ddb-0e35-467f-9240-948f6af92f2e.jpg', 'caption' => '料理鼠王本人申請通報，不知為何闖過AI的髒、亂、陰暗條件，但人工退件了'],
+        ['src' => '/storage/transparency/d4aa8759-8603-4ba0-b953-635cff58b1b6.jpg',      'caption' => '米老鼠試圖用卡通截圖闖關，信心度 99.9%'],
+        ['src' => '/storage/transparency/9304baef-fe2e-4d35-bec1-46d3468ed493.jpg',      'caption' => '迪士尼法務在你背後，他非常火大'],
+        ['src' => '/storage/transparency/9fe3de85-3abe-45ab-ba15-38eed7568178.jpg',      'caption' => '馬鈴薯鼠來了！AI 判定這是蔬菜不是老鼠，太有創意了'],
+        ['src' => '/storage/transparency/5450f21e-ffc0-4587-b95f-f221e14b04c9.jpg',      'caption' => '天竺巨鼠爬101!AI 認為這是建築物不是老鼠，創意滿分'],
         // ['src' => '/storage/transparency/ai-rat.jpg',      'caption' => 'AI 生成藝術鼠，文青派被擋'],
-        // ['src' => '/storage/transparency/plushie.jpg',     'caption' => '絨毛玩具鼠，主人情感受損'],
+        ['src' => '/storage/transparency/63e481f3-e374-4790-8e5d-4ef36aea7313.jpg',     'caption' => '絨毛玩具鼠，主人情感受損'],
         // ['src' => '/storage/transparency/toy.jpg',         'caption' => '兒童積木鼠，創意滿分但不算數'],
+        ['src' => '/storage/transparency/962ec82e-c292-4d6a-8d3b-b006fea3638e.jpg',     'caption' => '使用過往新聞照片，可惜闖關失敗'],
     ];
 @endphp
 
@@ -92,7 +96,7 @@
 
                 <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-5 text-center">
                     <div class="text-3xl font-bold text-amber-400">{{ number_format($stats['ai_auto']) }}</div>
-                    <div class="mt-1 text-xs text-slate-400">AI 自動攔截 · {{ $aiRate }}% 退件</div>
+                    <div class="mt-1 text-xs text-slate-400">AI 自動攔截 · 佔退件數 {{ $aiRate }}% </div>
                 </div>
 
                 <div class="rounded-xl border border-sky-500/30 bg-sky-500/10 p-5 text-center">
@@ -134,6 +138,121 @@
             </div>
         </section>
 
+        {{-- ── 時間趨勢 ── --}}
+        <section class="mb-12"
+                 x-data="{
+                     mode: 'weekly',
+                     chart: null,
+                     weekly: {{ Js::from($stats['weekly']) }},
+                     daily:  {{ Js::from($stats['daily']) }},
+                     init() {
+                         this.$nextTick(() => this.buildChart('weekly'));
+                     },
+                     buildChart(mode) {
+                         const data = mode === 'weekly' ? this.weekly : this.daily;
+                         const n = data.length;
+                         const labels = data.map(d => d.label);
+                         const totals = data.map(d => d.total);
+
+                         // 越舊越暗：opacity 從 0.15（最舊）→ 1.0（最新）
+                         const bgColors = data.map((_, i) => {
+                             const alpha = n <= 1 ? 1 : 0.15 + (i / (n - 1)) * 0.85;
+                             return `rgba(251,146,60,${alpha.toFixed(2)})`;
+                         });
+                         const borderColors = data.map((_, i) => {
+                             const alpha = n <= 1 ? 1 : 0.3 + (i / (n - 1)) * 0.7;
+                             return `rgba(251,146,60,${alpha.toFixed(2)})`;
+                         });
+
+                         if (this.chart) {
+                             this.chart.data.labels = labels;
+                             this.chart.data.datasets[0].data = totals;
+                             this.chart.data.datasets[0].backgroundColor = bgColors;
+                             this.chart.data.datasets[0].borderColor = borderColors;
+                             this.chart.update();
+                             return;
+                         }
+
+                         const ctx = this.$refs.canvas.getContext('2d');
+                         this.chart = new Chart(ctx, {
+                             type: 'bar',
+                             data: {
+                                 labels,
+                                 datasets: [{
+                                     label: '通報數',
+                                     data: totals,
+                                     backgroundColor: bgColors,
+                                     borderColor: borderColors,
+                                     borderWidth: 1,
+                                     borderRadius: 3,
+                                 }],
+                             },
+                             options: {
+                                 responsive: true,
+                                 maintainAspectRatio: false,
+                                 plugins: {
+                                     legend: { display: false },
+                                     tooltip: {
+                                         callbacks: {
+                                             title: (items) => {
+                                                 const label = items[0].label;
+                                                 return mode === 'weekly' ? `週起：${label}` : label;
+                                             },
+                                             label: (item) => ` 通報 ${item.raw} 筆`,
+                                         },
+                                     },
+                                 },
+                                 scales: {
+                                     x: {
+                                         ticks: {
+                                             color: '#94a3b8',
+                                             font: { size: 10 },
+                                             maxRotation: 45,
+                                             autoSkip: true,
+                                             maxTicksLimit: 12,
+                                         },
+                                         grid: { color: 'rgba(255,255,255,0.05)' },
+                                     },
+                                     y: {
+                                         ticks: { color: '#94a3b8', font: { size: 10 } },
+                                         grid: { color: 'rgba(255,255,255,0.08)' },
+                                         beginAtZero: true,
+                                     },
+                                 },
+                             },
+                         });
+                     },
+                     switchMode(m) {
+                         this.mode = m;
+                         this.buildChart(m);
+                     },
+                 }">
+            <div class="mb-5 flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-slate-300">📈 通報數量趨勢</h2>
+                <div class="flex gap-1 rounded-lg border border-white/10 bg-white/5 p-1 text-xs">
+                    <button class="rounded-md px-3 py-1 transition-colors"
+                            :class="mode === 'weekly' ? 'bg-orange-500/20 text-orange-300' : 'text-slate-400 hover:text-slate-200'"
+                            @click="switchMode('weekly')">依週</button>
+                    <button class="rounded-md px-3 py-1 transition-colors"
+                            :class="mode === 'daily' ? 'bg-orange-500/20 text-orange-300' : 'text-slate-400 hover:text-slate-200'"
+                            @click="switchMode('daily')">依日（近 90 天）</button>
+                </div>
+            </div>
+
+            @if (count($stats['weekly']) > 0)
+                <div class="rounded-xl border border-white/10 bg-white/5 p-4">
+                    <div class="relative h-64">
+                        <canvas x-ref="canvas"></canvas>
+                    </div>
+                    <p class="mt-3 text-right text-xs text-slate-600">* 顏色越亮表示越近期，可觀察鼠蹤是否有擴散趨勢</p>
+                </div>
+            @else
+                <div class="rounded-xl border border-dashed border-white/20 p-8 text-center text-sm text-slate-500">
+                    尚無足夠資料
+                </div>
+            @endif
+        </section>
+
         {{-- ── 退件原因分析 ── --}}
         <section class="mb-12">
             <h2 class="mb-5 text-lg font-semibold text-slate-300">❌ 退件原因分析</h2>
@@ -157,7 +276,7 @@
                     <p class="text-center text-sm text-slate-500">尚無退件記錄</p>
                 @endforelse
             </div>
-            <p class="mt-2 text-right text-xs text-slate-600">* AI 自動攔截 = 圖片不符通報規範，由模型自動拒絕</p>
+            <p class="mt-2 text-right text-xs text-slate-600">* AI 自動攔截 = 圖片不符合規範，由模型自動拒絕</p>
         </section>
 
         {{-- ── 審核機制 SOP ── --}}
@@ -240,26 +359,34 @@
                         <div class="mt-1 text-xs text-slate-400">核心開發者</div>
                     </div>
                     <div>
-                        <div class="text-3xl font-bold text-violet-400">數十位</div>
+                        <div class="text-3xl font-bold text-violet-400">近十位</div>
                         <div class="mt-1 text-xs text-slate-400">熱心市民志工審核</div>
                     </div>
                     <div>
-                        <div class="text-3xl font-bold text-violet-400">2025</div>
-                        <div class="mt-1 text-xs text-slate-400">開始服務台北市民</div>
+                        <div class="text-3xl font-bold text-violet-400">2026</div>
+                        <div class="mt-1 text-xs text-slate-400">開始服務但不限於台北市民</div>
                     </div>
                 </div>
 
                 <blockquote class="border-l-2 border-violet-500 pl-4 italic text-sm leading-relaxed text-slate-400">
-                    「鼠雷達是一個由市民自發的資訊公開計畫。我們相信透過科技和社群的力量，
+                    「見鼠雷達是一個由市民自發的資訊公開計畫。我們相信透過科技和社群的力量，
                     讓每個人都能即時了解鄰里的環境衛生狀況。每一筆經過審核的通報，
                     都是對公共衛生的一份貢獻。」
-                    <footer class="mt-2 text-xs text-slate-600 not-italic">— 鼠雷達開發者</footer>
+                    <footer class="mt-2 text-xs text-slate-600 not-italic">— 見鼠雷達開發者</footer>
+                </blockquote>
+                <blockquote class="border-l-2 border-violet-500 pl-4 italic text-sm leading-relaxed text-slate-400">
+                    <a href="https://news.ltn.com.tw/news/life/breakingnews/5431156" target="_blank">自由時報專訪 城市人物誌</a><br>
+                    <a href="https://www.bbc.com/zhongwen/articles/c5yerdxdvz6o/trad" target="_blank">BBC 專訪： 老鼠、選票與科學：拆解台北「安鼠之亂」背後的治理危機</a><br>
+                    <a href="https://www.youtube.com/watch?v=IUD1CU-HyZ4&pp=0gcJCQMLAYcqIYzv" target="_blank">鏡新聞專訪：見鼠雷達製作人說明審核防護機制</a><br>
+                    <a href="https://news.tvbs.com.tw/life/3196048" target="_blank">TVBS 教學使用文</a><br>
+                    <a href="https://www.cna.com.tw/news/ahel/202605045004.aspx" target="_blank">中央社報導</a>
+                    <footer class="mt-2 text-xs text-slate-600 not-italic">— 媒體相關報導</footer>
                 </blockquote>
 
                 <div class="mt-6 rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
                     <p class="text-xs leading-relaxed text-amber-200/70">
-                        💛 本服務純公益經營，不收費、不牟利。若您希望協助審核通報或有任何建議，
-                        歡迎透過 <a href="mailto:ratdar@taipei" class="underline hover:text-amber-200">ratdar@taipei</a> 與我們聯繫。
+                        💛 本服務純公益經營，不收費、不牟利。若您發現回報有錯誤或有任何建議，
+                        歡迎透過聯絡管理員按鈕與我們聯繫。
                     </p>
                 </div>
 

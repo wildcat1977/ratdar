@@ -95,6 +95,27 @@ Route::get('/transparency', function () {
             ->pluck('c', 'rejection_reason')
             ->all(); // plain array to avoid Collection serialization issues
 
+        // 週統計：每週 ISO 起始日 + 通報總數
+        $weekly = DB::table('reports')
+            ->selectRaw("TO_CHAR(DATE_TRUNC('week', created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Taipei'), 'YYYY-MM-DD') AS label, COUNT(*) AS total")
+            ->groupByRaw("DATE_TRUNC('week', created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Taipei')")
+            ->orderByRaw("DATE_TRUNC('week', created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Taipei')")
+            ->get()
+            ->map(fn ($r) => ['label' => $r->label, 'total' => (int) $r->total])
+            ->values()
+            ->all();
+
+        // 日統計：近 90 天每日通報數
+        $daily = DB::table('reports')
+            ->selectRaw("TO_CHAR((created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Taipei')::date, 'YYYY-MM-DD') AS label, COUNT(*) AS total")
+            ->where('created_at', '>=', now()->subDays(90))
+            ->groupByRaw("(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Taipei')::date")
+            ->orderByRaw("(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Taipei')::date")
+            ->get()
+            ->map(fn ($r) => ['label' => $r->label, 'total' => (int) $r->total])
+            ->values()
+            ->all();
+
         return [
             'total' => Report::count(),
             'approved' => Report::where('status', Report::STATUS_APPROVED)->count(),
@@ -108,6 +129,8 @@ Route::get('/transparency', function () {
                 ->selectRaw('AVG(EXTRACT(EPOCH FROM (reviewed_at - created_at))/3600) AS avg_hrs')
                 ->value('avg_hrs') ?? 0),
             'rejection_breakdown' => $rejectionBreakdown,
+            'weekly' => $weekly,
+            'daily' => $daily,
         ];
     });
 
