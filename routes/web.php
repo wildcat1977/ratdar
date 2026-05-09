@@ -148,6 +148,68 @@ Route::get('/transparency', function () {
     return view('pages.transparency', compact('stats'));
 })->name('transparency');
 
+Route::get('/stats', function () {
+    // 重用 transparency 的快取，避免重複查詢
+    $stats = Cache::remember('transparency.stats', 3600, function () {
+        $rejectionBreakdown = DB::table('reports')
+            ->where('status', 'rejected')
+            ->whereNotNull('rejection_reason')
+            ->selectRaw('rejection_reason, COUNT(*) as c')
+            ->groupBy('rejection_reason')
+            ->orderByDesc('c')
+            ->pluck('c', 'rejection_reason')
+            ->all();
+
+        $weekly = DB::table('reports')
+            ->selectRaw("TO_CHAR(DATE_TRUNC('week', created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Taipei'), 'YYYY-MM-DD') AS label, COUNT(*) AS total")
+            ->groupByRaw("DATE_TRUNC('week', created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Taipei')")
+            ->orderByRaw("DATE_TRUNC('week', created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Taipei')")
+            ->get()
+            ->map(fn ($r) => ['label' => $r->label, 'total' => (int) $r->total])
+            ->values()
+            ->all();
+
+        $daily = DB::table('reports')
+            ->selectRaw("TO_CHAR((created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Taipei')::date, 'YYYY-MM-DD') AS label, COUNT(*) AS total")
+            ->where('created_at', '>=', now()->subDays(90))
+            ->groupByRaw("(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Taipei')::date")
+            ->orderByRaw("(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Taipei')::date")
+            ->get()
+            ->map(fn ($r) => ['label' => $r->label, 'total' => (int) $r->total])
+            ->values()
+            ->all();
+
+        $mapPoints = DB::table('reports')
+            ->whereIn('status', ['approved', 'reported_1999', 'resolved'])
+            ->selectRaw('latitude::float AS lat, longitude::float AS lng, type, EXTRACT(EPOCH FROM created_at)::int AS ts')
+            ->orderBy('created_at')
+            ->get()
+            ->map(fn ($r) => [(float) $r->lat, (float) $r->lng, $r->type, (int) $r->ts])
+            ->values()
+            ->all();
+
+        return [
+            'total' => Report::count(),
+            'approved' => Report::where('status', Report::STATUS_APPROVED)->count(),
+            'pending' => Report::where('status', Report::STATUS_PENDING)->count(),
+            'rejected' => Report::where('status', Report::STATUS_REJECTED)->count(),
+            'reported_1999' => Report::where('status', Report::STATUS_REPORTED_1999)->count(),
+            'resolved' => Report::where('status', Report::STATUS_RESOLVED)->count(),
+            'ai_auto' => (int) ($rejectionBreakdown['ai_auto'] ?? 0),
+            'avg_review_hrs' => (float) (DB::table('reports')
+                ->whereNotNull('reviewed_at')
+                ->selectRaw('AVG(EXTRACT(EPOCH FROM (reviewed_at - created_at))/3600) AS avg_hrs')
+                ->value('avg_hrs') ?? 0),
+            'rejection_breakdown' => $rejectionBreakdown,
+            'weekly' => $weekly,
+            'daily' => $daily,
+            'map_points' => $mapPoints,
+        ];
+    });
+
+    return view('pages.stats', compact('stats'));
+})->name('stats');
+
 Route::get('/share/{user}', [ShareController::class, 'show'])->name('share.show');
 Route::get('/share/{user}/og.jpg', [ShareController::class, 'image'])->name('share.image');
 

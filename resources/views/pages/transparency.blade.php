@@ -72,6 +72,12 @@
             <h1 class="mb-3 text-3xl font-bold tracking-tight text-white">審核透明度報告</h1>
             <p class="text-slate-400">公開通報審核數據，讓機制透明可見</p>
             <p class="mt-1 text-xs text-slate-600">資料每小時更新一次 · 截至 {{ now()->setTimezone('Asia/Taipei')->format('Y/m/d H:i') }}</p>
+            <p class="mt-3">
+                <a href="{{ route('stats') }}"
+                   class="inline-flex items-center gap-1.5 rounded-full border border-orange-500/30 bg-orange-500/10 px-4 py-1.5 text-xs text-orange-300 hover:bg-orange-500/20 transition-colors">
+                    📊 查看互動式統計地圖 →
+                </a>
+            </p>
         </div>
 
         {{-- ── 核心數據卡 ── --}}
