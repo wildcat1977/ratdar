@@ -149,7 +149,7 @@ Route::get('/transparency', function () {
 })->name('transparency');
 
 Route::get('/stats', function () {
-    // 重用 transparency 的快取，避免重複查詢
+    // 共用 transparency 的快取 key，不重複定義 closure
     $stats = Cache::remember('transparency.stats', 3600, function () {
         $rejectionBreakdown = DB::table('reports')
             ->where('status', 'rejected')
@@ -160,28 +160,30 @@ Route::get('/stats', function () {
             ->pluck('c', 'rejection_reason')
             ->all();
 
+        // created_at 已是台北本地時間，直接使用，無需轉換時區
         $weekly = DB::table('reports')
-            ->selectRaw("TO_CHAR(DATE_TRUNC('week', created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Taipei'), 'YYYY-MM-DD') AS label, COUNT(*) AS total")
-            ->groupByRaw("DATE_TRUNC('week', created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Taipei')")
-            ->orderByRaw("DATE_TRUNC('week', created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Taipei')")
+            ->selectRaw("TO_CHAR(DATE_TRUNC('week', created_at), 'YYYY-MM-DD') AS label, COUNT(*) AS total")
+            ->groupByRaw("DATE_TRUNC('week', created_at)")
+            ->orderByRaw("DATE_TRUNC('week', created_at)")
             ->get()
             ->map(fn ($r) => ['label' => $r->label, 'total' => (int) $r->total])
             ->values()
             ->all();
 
         $daily = DB::table('reports')
-            ->selectRaw("TO_CHAR((created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Taipei')::date, 'YYYY-MM-DD') AS label, COUNT(*) AS total")
+            ->selectRaw("TO_CHAR(created_at::date, 'YYYY-MM-DD') AS label, COUNT(*) AS total")
             ->where('created_at', '>=', now()->subDays(90))
-            ->groupByRaw("(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Taipei')::date")
-            ->orderByRaw("(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Taipei')::date")
+            ->groupByRaw('created_at::date')
+            ->orderByRaw('created_at::date')
             ->get()
             ->map(fn ($r) => ['label' => $r->label, 'total' => (int) $r->total])
             ->values()
             ->all();
 
+        // epoch 需告知 PG「此值是台北時間」才能取到正確 UTC epoch
         $mapPoints = DB::table('reports')
             ->whereIn('status', ['approved', 'reported_1999', 'resolved'])
-            ->selectRaw('latitude::float AS lat, longitude::float AS lng, type, EXTRACT(EPOCH FROM created_at)::int AS ts')
+            ->selectRaw("latitude::float AS lat, longitude::float AS lng, type, EXTRACT(EPOCH FROM (created_at AT TIME ZONE 'Asia/Taipei'))::int AS ts")
             ->orderBy('created_at')
             ->get()
             ->map(fn ($r) => [(float) $r->lat, (float) $r->lng, $r->type, (int) $r->ts])

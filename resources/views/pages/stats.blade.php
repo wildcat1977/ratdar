@@ -172,6 +172,7 @@
 
                      tsToLabel(ts) {
                          return new Date(ts * 1000).toLocaleDateString('zh-TW', {
+                             timeZone: 'Asia/Taipei',
                              month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit',
                          });
                      },
