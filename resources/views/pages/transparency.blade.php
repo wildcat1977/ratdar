@@ -147,7 +147,9 @@
                      daily:  {{ Js::from($stats['daily']) }},
                      init() {
                          this.$nextTick(() => this.buildChart('weekly'));
-                         this.$watch('$destroy', () => { if (this.chart) { this.chart.destroy(); this.chart = null; } });
+                     },
+                     destroy() {
+                         if (this.chart) { this.chart.destroy(); this.chart = null; }
                      },
                      buildChart(mode) {
                          const data = mode === 'weekly' ? this.weekly : this.daily;
@@ -165,13 +167,10 @@
                              return `rgba(251,146,60,${alpha.toFixed(2)})`;
                          });
 
+                         // 每次切換模式都 destroy 重建，避免 axis 狀態不一致
                          if (this.chart) {
-                             this.chart.data.labels = labels;
-                             this.chart.data.datasets[0].data = totals;
-                             this.chart.data.datasets[0].backgroundColor = bgColors;
-                             this.chart.data.datasets[0].borderColor = borderColors;
-                             this.chart.update();
-                             return;
+                             this.chart.destroy();
+                             this.chart = null;
                          }
 
                          const ctx = this.$refs.canvas.getContext('2d');
