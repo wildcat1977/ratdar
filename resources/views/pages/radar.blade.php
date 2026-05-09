@@ -64,9 +64,11 @@
                 <span>{{ __('立即回報') }}</span>
             </button>
 
-            <footer class="mx-auto flex w-full max-w-md items-center justify-between text-[11px] text-slate-500">
+            <footer class="mx-auto flex w-full max-w-md flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-slate-500">
                 <a href="{{ route('leaderboard') }}" class="hover:text-slate-300">{{ __('回報榜') }}</a>
                 <a href="{{ route('reports') }}" class="hover:text-slate-300">{{ __('通報清單') }}</a>
+                <a href="{{ route('transparency') }}" class="hover:text-slate-300">{{ __('透明度報告') }}</a>
+                <a href="{{ route('stats') }}" class="hover:text-slate-300">{{ __('統計地圖') }}</a>
                 @auth
                     <a href="{{ route('profile') }}" class="hover:text-slate-300">{{ __('我的回報') }}</a>
                 @else

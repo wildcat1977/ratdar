@@ -212,6 +212,8 @@ Route::get('/stats', function () {
     return view('pages.stats', compact('stats'));
 })->name('stats');
 
+Route::get('/contact', fn () => view('pages.contact'))->name('contact');
+
 Route::get('/share/{user}', [ShareController::class, 'show'])->name('share.show');
 Route::get('/share/{user}/og.jpg', [ShareController::class, 'image'])->name('share.image');
 
