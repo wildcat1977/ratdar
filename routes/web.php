@@ -135,8 +135,8 @@ Route::get('/transparency', function () {
             'resolved' => Report::where('status', Report::STATUS_RESOLVED)->count(),
             'ai_auto' => (int) ($rejectionBreakdown['ai_auto'] ?? 0),
             'avg_review_hrs' => (float) (DB::table('reports')
-                ->whereNotNull('reviewed_at')
-                ->selectRaw('AVG(EXTRACT(EPOCH FROM (reviewed_at - created_at))/3600) AS avg_hrs')
+                ->whereNotNull('first_reviewed_at')
+                ->selectRaw('AVG(EXTRACT(EPOCH FROM (first_reviewed_at - created_at))/3600) AS avg_hrs')
                 ->value('avg_hrs') ?? 0),
             'rejection_breakdown' => $rejectionBreakdown,
             'weekly' => $weekly,
@@ -199,8 +199,8 @@ Route::get('/stats', function () {
             'resolved' => Report::where('status', Report::STATUS_RESOLVED)->count(),
             'ai_auto' => (int) ($rejectionBreakdown['ai_auto'] ?? 0),
             'avg_review_hrs' => (float) (DB::table('reports')
-                ->whereNotNull('reviewed_at')
-                ->selectRaw('AVG(EXTRACT(EPOCH FROM (reviewed_at - created_at))/3600) AS avg_hrs')
+                ->whereNotNull('first_reviewed_at')
+                ->selectRaw('AVG(EXTRACT(EPOCH FROM (first_reviewed_at - created_at))/3600) AS avg_hrs')
                 ->value('avg_hrs') ?? 0),
             'rejection_breakdown' => $rejectionBreakdown,
             'weekly' => $weekly,

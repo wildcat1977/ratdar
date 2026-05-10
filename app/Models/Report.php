@@ -69,6 +69,7 @@ class Report extends Model
         'status',
         'rejection_reason',
         'reviewed_at',
+        'first_reviewed_at',
     ];
 
     protected function casts(): array
@@ -77,6 +78,7 @@ class Report extends Model
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
             'reviewed_at' => 'datetime',
+            'first_reviewed_at' => 'datetime',
         ];
     }
 
@@ -97,6 +99,10 @@ class Report extends Model
         static::updating(function (Report $report) {
             if ($report->isDirty('status') && $report->status !== self::STATUS_PENDING) {
                 $report->reviewed_at = now();
+                // 首次審核時間只寫入一次，後續重新審核不覆蓋
+                if (is_null($report->first_reviewed_at)) {
+                    $report->first_reviewed_at = $report->reviewed_at;
+                }
             }
         });
 
