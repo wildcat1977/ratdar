@@ -90,14 +90,32 @@ window.onPhotoChange = async function (input, wire) {
     wire.setLocationFromExif(loc.lat, loc.lng);
 };
 
-const TILE_URL_DARK  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-const TILE_URL_LIGHT = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+const TILE_URL_DARK  = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const TILE_URL_LIGHT = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const MAP_THEME_KEY  = 'mouseradar_map_theme';
-const TILE_OPTIONS = {
-    attribution: '&copy; OpenStreetMap &copy; CARTO',
-    subdomains: 'abcd',
-    maxZoom: 20,
+const TILE_OPTIONS_DARK = {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    subdomains: 'abc',
+    maxZoom: 19,
 };
+const TILE_OPTIONS_LIGHT = {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    subdomains: 'abc',
+    maxZoom: 19,
+};
+// 向下相容：部分地方直接引用 TILE_OPTIONS，預設給亮色設定
+const TILE_OPTIONS = TILE_OPTIONS_LIGHT;
+
+// 暗色模式用 CSS filter 實現（免 API key）
+function applyTileDarkFilter(theme) {
+    if (!radarMap) return;
+    const pane = radarMap.getPane('tilePane');
+    if (pane) {
+        pane.style.filter = theme === 'dark'
+            ? 'invert(100%) hue-rotate(180deg) brightness(0.85) contrast(1.05)'
+            : '';
+    }
+}
 
 // 熱區色階：暗底→亮色跳出；亮底→深色才跳出（反轉亮度進程）
 const HEAT_GRADIENT_DARK  = { 0.15: '#7f1d1d', 0.45: '#ef4444', 0.70: '#f97316', 0.90: '#fbbf24' };
@@ -276,8 +294,9 @@ function setMapTheme(theme) {
         radarMap.removeLayer(currentTileLayer);
         currentTileLayer = L.tileLayer(
             theme === 'dark' ? TILE_URL_DARK : TILE_URL_LIGHT,
-            TILE_OPTIONS
+            theme === 'dark' ? TILE_OPTIONS_DARK : TILE_OPTIONS_LIGHT
         ).addTo(radarMap);
+        applyTileDarkFilter(theme);
     }
     // 同步切換熱區色階；leaflet.heat 需手動 redraw 才會套用新 gradient
     if (heatLayer) {
@@ -324,8 +343,10 @@ function initRadar() {
 
     currentTileLayer = L.tileLayer(
         currentTheme === 'dark' ? TILE_URL_DARK : TILE_URL_LIGHT,
-        TILE_OPTIONS
+        currentTheme === 'dark' ? TILE_OPTIONS_DARK : TILE_OPTIONS_LIGHT
     ).addTo(radarMap);
+    // dark filter 需在 map 初始化後再套用
+    radarMap.whenReady(() => applyTileDarkFilter(currentTheme));
     L.control.zoom({ position: 'topright' }).addTo(radarMap);
 
     heatLayer = L.heatLayer(points, {
@@ -438,7 +459,7 @@ window.initPinMap = function (el, wire) {
     const map = L.map(el, { zoomControl: true, attributionControl: false })
         .setView([DEFAULT_LAT, DEFAULT_LNG], 17);
 
-    L.tileLayer(TILE_URL_LIGHT, TILE_OPTIONS).addTo(map);
+    L.tileLayer(TILE_URL_LIGHT, TILE_OPTIONS_LIGHT).addTo(map);
 
     // 地址搜尋（Nominatim / OSM，免費無 API Key）
     createGeocoder({
