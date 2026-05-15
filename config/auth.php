@@ -114,4 +114,18 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Protected Admin Emails
+    |--------------------------------------------------------------------------
+    |
+    | Comma-separated list of email addresses whose admin rights can never be
+    | revoked via the admin panel. Set PROTECTED_ADMIN_EMAILS in your .env.
+    |
+    */
+
+    'protected_admin_emails' => array_filter(
+        array_map('trim', explode(',', env('PROTECTED_ADMIN_EMAILS', '')))
+    ),
+
 ];

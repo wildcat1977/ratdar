@@ -26,7 +26,7 @@ class EditUser extends EditRecord
 
         if ($newIsAdmin !== (bool) $record->is_admin) {
             // Protected accounts may never have admin revoked
-            if (! $newIsAdmin && in_array($record->email, User::PROTECTED_ADMIN_EMAILS)) {
+            if (! $newIsAdmin && in_array($record->email, User::protectedAdminEmails())) {
                 Notification::make()
                     ->title('無法撤銷管理員權限')
                     ->body('此帳號的管理員權限受到保護，無法被撤銷。')
@@ -52,6 +52,7 @@ class EditUser extends EditRecord
         // Strip the virtual confirmation field – it must remain dehydrated so
         // beforeSave() can read it, but it has no corresponding database column.
         unset($data['is_admin_confirm']);
+
         return $data;
     }
 }
