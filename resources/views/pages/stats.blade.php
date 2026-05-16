@@ -170,13 +170,11 @@
                          if (this.map) return;
                          this.map = L.map(this.$refs.mapel, { zoomControl: true, attributionControl: false })
                              .setView([25.045, 121.54], 12);
-                         const tl = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                              subdomains: 'abc', maxZoom: 19,
                          }).addTo(this.map);
-                         tl.on('add', () => {
-                             const pane = this.map.getPane('tilePane');
-                             if (pane) pane.style.filter = 'invert(100%) hue-rotate(180deg) brightness(0.85) contrast(1.05)';
-                         });
+                         const tilePane = this.map.getPane('tilePane');
+                         if (tilePane) tilePane.style.filter = 'invert(100%) hue-rotate(180deg) brightness(0.85) contrast(1.05)';
                          setTimeout(() => { this.map.invalidateSize(); this.renderPoints(); }, 50);
                      },
 
