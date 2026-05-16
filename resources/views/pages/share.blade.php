@@ -13,6 +13,7 @@
 
     <title>{{ $ogTitle }}</title>
     <meta name="description" content="{{ $ogDesc }}">
+    <link rel="canonical" href="{{ $ogUrl }}">
 
     <meta property="og:title"       content="{{ $ogTitle }}">
     <meta property="og:description" content="{{ $ogDesc }}">
