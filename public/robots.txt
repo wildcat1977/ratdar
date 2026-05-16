@@ -1,2 +1,5 @@
 User-agent: *
-Disallow:
+Disallow: /locale/
+Disallow: /admin/
+Disallow: /auth/
+Disallow: /reports/export

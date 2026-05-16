@@ -15,7 +15,7 @@ Route::get('/locale/{locale}', function (string $locale) {
         session(['locale' => $locale]);
     }
 
-    return redirect()->back();
+    return redirect()->back(302, [], route('home'));
 })->name('locale.set');
 
 Route::view('/', 'pages.radar')->name('home');
