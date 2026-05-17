@@ -2,6 +2,8 @@
 
 @section('title', '聯絡管理員 · Rat Radar')
 
+@section('canonical_url', 'https://ratdar.taipei/contact')
+
 @section('content')
 <div class="min-h-dvh bg-[#0d1117] text-slate-200">
 

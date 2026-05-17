@@ -9,7 +9,7 @@
     {{-- SEO / OG --}}
     <meta name="description" content="城市防衛啟動！立刻開啟雷達，通報台北市各角落的鼠患蹤跡。">
     <meta name="theme-color" content="#0d1117">
-    <link rel="canonical" href="{{ url()->current() }}">
+    <link rel="canonical" href="@yield('canonical_url', url()->current())">
 
     <meta property="og:title" content="見鼠地圖 | 台北城任務一起尋找老鼠">
     <meta property="og:description" content="城市防衛啟動！立刻開啟雷達，通報台北市各角落的鼠患蹤跡，為城市安全盡一份心力。">

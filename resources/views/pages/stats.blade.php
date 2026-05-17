@@ -2,6 +2,8 @@
 
 @section('title', '通報統計地圖 · Rat Radar')
 
+@section('canonical_url', 'https://ratdar.taipei/stats')
+
 @section('content')
 @php
     $hasChart = count($stats['weekly']) > 0;
