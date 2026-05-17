@@ -2,8 +2,6 @@
 
 @section('title', '審核透明度報告 · Rat Radar')
 
-@section('canonical_url', 'https://ratdar.taipei/transparency')
-
 @section('content')
 @php
     use App\Models\Report;

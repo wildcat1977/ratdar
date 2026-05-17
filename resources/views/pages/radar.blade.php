@@ -1,7 +1,5 @@
 @extends('layouts.app')
 
-@section('canonical_url', 'https://ratdar.taipei/')
-
 @section('content')
 <div class="relative min-h-dvh">
     {{-- 全螢幕地圖 --}}
