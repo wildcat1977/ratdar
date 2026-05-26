@@ -15,9 +15,12 @@ new class extends Component
 
     public bool $saved = false;
 
+    public bool $isPrivate = false;
+
     public function mount(): void
     {
         $this->displayName = Auth::user()->name;
+        $this->isPrivate   = (bool) Auth::user()->is_private;
     }
 
     public function save(): void
@@ -25,6 +28,12 @@ new class extends Component
         $this->validate();
         Auth::user()->update(['name' => $this->displayName]);
         $this->saved = true;
+    }
+
+    public function togglePrivate(): void
+    {
+        $this->isPrivate = ! $this->isPrivate;
+        Auth::user()->update(['is_private' => $this->isPrivate]);
     }
 
     public function getReportsProperty()
@@ -88,6 +97,27 @@ new class extends Component
                     {{ __('昵稱已更新！') }}
                 </p>
             @endif
+        </div>
+
+        {{-- 隱私設定 --}}
+        <div class="mt-5 border-t border-white/10 pt-5">
+            <div class="flex items-center justify-between gap-4">
+                <div>
+                    <p class="text-sm font-medium text-slate-200">{{ __('隱私模式') }}</p>
+                    <p class="mt-0.5 text-xs text-slate-500">{{ __('開啟後，排行榜將以「匿名捕鼠手」顯示，隱藏你的名稱與頭像') }}</p>
+                </div>
+                <button wire:click="togglePrivate"
+                        type="button"
+                        class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent
+                               transition-colors duration-200 focus:outline-none
+                               {{ $isPrivate ? 'bg-red-600' : 'bg-white/20' }}"
+                        role="switch"
+                        aria-checked="{{ $isPrivate ? 'true' : 'false' }}">
+                    <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow
+                                 transition duration-200
+                                 {{ $isPrivate ? 'translate-x-5' : 'translate-x-0' }}"></span>
+                </button>
+            </div>
         </div>
 
         {{-- 分享成就卡 --}}

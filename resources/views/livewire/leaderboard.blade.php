@@ -48,13 +48,13 @@ new class extends Component
                     @endphp
                     <div class="flex flex-col items-center {{ $height }}">
                         <span class="text-2xl">{{ $medal }}</span>
-                        @if ($user->avatar)
+                        @if (! $user->is_private && $user->avatar)
                             <img src="{{ $user->avatar }}" alt="{{ $user->name }}"
                                  class="mt-1 h-12 w-12 rounded-full object-cover ring-2 {{ $rank === 1 ? 'ring-yellow-400' : 'ring-white/20' }}">
                         @else
                             <div class="mt-1 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-xl ring-2 {{ $rank === 1 ? 'ring-yellow-400' : 'ring-white/20' }}">👤</div>
                         @endif
-                        <p class="mt-2 max-w-full truncate px-1 text-center text-xs font-semibold text-slate-200">{{ $user->name }}</p>
+                        <p class="mt-2 max-w-full truncate px-1 text-center text-xs font-semibold text-slate-200">{{ $user->is_private ? __('匿名捕鼠手') : $user->name }}</p>
                         <p class="text-[11px] text-red-400 font-bold">{{ $user->approved_count }} {{ __('筆') }}</p>
                     </div>
                 @endif
@@ -71,14 +71,14 @@ new class extends Component
                     {{ $i + 1 }}
                 </span>
 
-                @if ($user->avatar)
+                @if (! $user->is_private && $user->avatar)
                     <img src="{{ $user->avatar }}" alt="{{ $user->name }}"
                          class="h-9 w-9 rounded-full object-cover">
                 @else
                     <div class="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-base">👤</div>
                 @endif
 
-                <span class="flex-1 truncate text-sm font-medium text-slate-200">{{ $user->name }}</span>
+                <span class="flex-1 truncate text-sm font-medium text-slate-200">{{ $user->is_private ? __('匿名捕鼠手') : $user->name }}</span>
 
                 <span class="text-sm font-bold text-red-400">{{ $user->approved_count }}</span>
                 <span class="text-xs text-slate-600">{{ __('筆') }}</span>

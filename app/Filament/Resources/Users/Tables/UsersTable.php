@@ -2,10 +2,10 @@
 
 namespace App\Filament\Resources\Users\Tables;
 
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -37,8 +37,8 @@ class UsersTable
                     ->default('email')
                     ->formatStateUsing(fn (?string $state) => match ($state) {
                         'google' => 'Google',
-                        'line'   => 'LINE',
-                        default  => 'Email',
+                        'line' => 'LINE',
+                        default => 'Email',
                     }),
 
                 IconColumn::make('is_admin')
@@ -54,6 +54,14 @@ class UsersTable
                     ->falseIcon('heroicon-o-check-circle')
                     ->trueColor('danger')
                     ->falseColor('success'),
+
+                IconColumn::make('is_private')
+                    ->label('隱私')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-eye-slash')
+                    ->falseIcon('heroicon-o-eye')
+                    ->trueColor('warning')
+                    ->falseColor('gray'),
 
                 TextColumn::make('ban_reason')
                     ->label('封禁原因')
@@ -96,7 +104,7 @@ class UsersTable
                             ->placeholder('例：亂傳照片、留言騷擾…'),
                     ])
                     ->action(fn ($record, array $data) => $record->update([
-                        'is_banned'  => true,
+                        'is_banned' => true,
                         'ban_reason' => $data['ban_reason'],
                     ])),
                 Action::make('unban')
@@ -106,7 +114,7 @@ class UsersTable
                     ->visible(fn ($record) => $record->is_banned)
                     ->requiresConfirmation()
                     ->action(fn ($record) => $record->update([
-                        'is_banned'  => false,
+                        'is_banned' => false,
                         'ban_reason' => null,
                     ])),
                 EditAction::make(),

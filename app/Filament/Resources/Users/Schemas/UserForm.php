@@ -2,8 +2,8 @@
 
 namespace App\Filament\Resources\Users\Schemas;
 
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
 
@@ -43,8 +43,7 @@ class UserForm
                 Toggle::make('is_admin_confirm')
                     ->label('確認變更管理員權限')
                     ->helperText('請勾選以確認此操作')
-                    ->visible(fn (string $operation, $get, $record) =>
-                        $operation === 'edit' &&
+                    ->visible(fn (string $operation, $get, $record) => $operation === 'edit' &&
                         $record !== null &&
                         (bool) $get('is_admin') !== (bool) $record->is_admin
                     ),
@@ -59,6 +58,10 @@ class UserForm
                     ->rows(2)
                     ->visible(fn ($get) => (bool) $get('is_banned'))
                     ->placeholder('請填寫封禁原因，方便日後查閱'),
+
+                Toggle::make('is_private')
+                    ->label('隱私模式')
+                    ->helperText('開啟後排行榜以「匿名捕鼠手」顯示，隱藏名稱與頭像'),
             ]);
     }
 }
