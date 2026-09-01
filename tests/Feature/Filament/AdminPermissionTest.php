@@ -10,17 +10,35 @@ class AdminPermissionTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_protected_admin_emails_constant_contains_expected_emails(): void
+    protected function setUp(): void
     {
-        $this->assertContains('wildcat.young@gmail.com', User::PROTECTED_ADMIN_EMAILS);
-        $this->assertContains('genehong@gmail.com', User::PROTECTED_ADMIN_EMAILS);
+        parent::setUp();
+
+        // 受保護名單來自 PROTECTED_ADMIN_EMAILS（.env），測試固定一份名單，
+        // 才不會因為部署環境的設定不同而時綠時紅。
+        config(['auth.protected_admin_emails' => ['protected@example.com']]);
+    }
+
+    public function test_protected_admin_emails_reads_the_configured_list(): void
+    {
+        $this->assertSame(['protected@example.com'], User::protectedAdminEmails());
+    }
+
+    public function test_protected_admin_emails_is_empty_when_nothing_is_configured(): void
+    {
+        config(['auth.protected_admin_emails' => []]);
+
+        $admin = User::factory()->admin()->create(['email' => 'other@example.com']);
+
+        $this->assertSame([], User::protectedAdminEmails());
+        $this->assertNotContains($admin->email, User::protectedAdminEmails());
     }
 
     public function test_regular_admin_is_not_protected(): void
     {
         $admin = User::factory()->admin()->create(['email' => 'other@example.com']);
 
-        $this->assertNotContains($admin->email, User::PROTECTED_ADMIN_EMAILS);
+        $this->assertNotContains($admin->email, User::protectedAdminEmails());
     }
 
     public function test_is_admin_can_be_set_to_true(): void
@@ -36,19 +54,19 @@ class AdminPermissionTest extends TestCase
     {
         $admin = User::factory()->admin()->create(['email' => 'other@example.com']);
 
-        $this->assertFalse(in_array($admin->email, User::PROTECTED_ADMIN_EMAILS));
+        $this->assertNotContains($admin->email, User::protectedAdminEmails());
 
         $admin->update(['is_admin' => false]);
 
         $this->assertFalse($admin->fresh()->is_admin);
     }
 
-    public function test_protected_emails_are_in_protected_admin_emails_list(): void
+    public function test_protected_emails_are_recognised_as_protected(): void
     {
-        foreach (User::PROTECTED_ADMIN_EMAILS as $email) {
+        foreach (User::protectedAdminEmails() as $email) {
             $user = User::factory()->admin()->create(['email' => $email]);
 
-            $this->assertTrue(in_array($user->email, User::PROTECTED_ADMIN_EMAILS));
+            $this->assertContains($user->email, User::protectedAdminEmails());
         }
     }
 }
