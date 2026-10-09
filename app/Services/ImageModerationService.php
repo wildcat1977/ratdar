@@ -23,7 +23,7 @@ class ImageModerationService
             ],
         ]);
 
-        $this->model = config('services.claude.model', 'claude-haiku-4-5');
+        $this->model = config('services.claude.model', 'claude-haiku-5-5');
     }
 
     /**
@@ -44,6 +44,9 @@ class ImageModerationService
             $payload = [
                 'model'      => $this->model,
                 'max_tokens' => 64,
+                // Haiku 5.5 預設會先 thinking；64 token 會整個被 thinking 吃掉、沒有 text 區塊，
+                // 結果靜默變成「通過」。這是單純的是非判斷，關掉 thinking（跟 Haiku 4.5 行為一致）。
+                'thinking'   => ['type' => 'disabled'],
                 'messages'   => [
                     [
                         'role'    => 'user',
@@ -67,7 +70,7 @@ class ImageModerationService
 
             $response = $this->client->post('/v1/messages', ['json' => $payload]);
             $body     = json_decode($response->getBody()->getContents(), true);
-            $text     = trim($body['content'][0]['text'] ?? '{}');
+            $text     = trim(self::extractText($body));
 
             // Extract JSON even if model wraps it in markdown
             if (preg_match('/\{[^}]+\}/', $text, $m)) {
@@ -118,6 +121,18 @@ class ImageModerationService
 
             return ['is_valid' => true, 'confidence' => 0.0, 'reason' => 'error'];
         }
+    }
+
+    /** @param  array<string, mixed>  $body */
+    public static function extractText(array $body): string
+    {
+        foreach ($body['content'] ?? [] as $block) {
+            if (($block['type'] ?? null) === 'text' && is_string($block['text'] ?? null)) {
+                return $block['text'];
+            }
+        }
+
+        return '{}';
     }
 
     /**
